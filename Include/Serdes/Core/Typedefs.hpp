@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 /** @file
 
-	@brief Определение седесов для стандартных типов данных
+	@brief РћРїСЂРµРґРµР»РµРЅРёРµ СЃРµРґРµСЃРѕРІ РґР»СЏ СЃС‚Р°РЅРґР°СЂС‚РЅС‹С… С‚РёРїРѕРІ РґР°РЅРЅС‹С…
 
 	@details
 
@@ -43,7 +43,7 @@
 namespace serdes
 {
     //--------------------------------------------------------------------------
-    // Определение седесов на базе шаблона Pod и декларация необходимых требований
+    // РћРїСЂРµРґРµР»РµРЅРёРµ СЃРµРґРµСЃРѕРІ РЅР° Р±Р°Р·Рµ С€Р°Р±Р»РѕРЅР° Pod Рё РґРµРєР»Р°СЂР°С†РёСЏ РЅРµРѕР±С…РѕРґРёРјС‹С… С‚СЂРµР±РѕРІР°РЅРёР№
 
     using Bool = Pod<bool, PodTypeId::Bool>;
     using UChar8 = Pod<unsigned char, PodTypeId::Char8>;
@@ -91,32 +91,32 @@ namespace serdes
     using DoubleB = Pod<double, PodTypeId::DoubleB>;
 
     static_assert(sizeof(std::chrono::day) == 1);
-    using Day = Pod<std::chrono::day, PodTypeId::Day>; // день месяца
+    using Day = Pod<std::chrono::day, PodTypeId::Day>; // РґРµРЅСЊ РјРµСЃСЏС†Р°
 
     static_assert(sizeof(std::chrono::month) == 1);
-    using Month = Pod<std::chrono::month, PodTypeId::Month>; // номер месяца в году (1 - январь, ..., 12 - декабрь)
+    using Month = Pod<std::chrono::month, PodTypeId::Month>; // РЅРѕРјРµСЂ РјРµСЃСЏС†Р° РІ РіРѕРґСѓ (1 - СЏРЅРІР°СЂСЊ, ..., 12 - РґРµРєР°Р±СЂСЊ)
 
     static_assert(sizeof(std::chrono::weekday) == 1);
-    using Weekday = Pod<std::chrono::weekday, PodTypeId::Weekday>; // день недели (0 - воскресенье, ..., 6 - суббота)
+    using Weekday = Pod<std::chrono::weekday, PodTypeId::Weekday>; // РґРµРЅСЊ РЅРµРґРµР»Рё (0 - РІРѕСЃРєСЂРµСЃРµРЅСЊРµ, ..., 6 - СЃСѓР±Р±РѕС‚Р°)
 
     static_assert(sizeof(std::chrono::year) == 2);
     using Year = Pod<std::chrono::year, PodTypeId::Year>;
     using YearB = Pod<std::chrono::year, PodTypeId::YearB>;
 
     static_assert(sizeof(std::chrono::year_month_day) == 4);
-    using Date = Pod<std::chrono::year_month_day, PodTypeId::Date>; // дата
+    using Date = Pod<std::chrono::year_month_day, PodTypeId::Date>; // РґР°С‚Р°
     using DateB = Pod<std::chrono::year_month_day, PodTypeId::DateB>; //
 
-    // Седесы времени дня(без даты) с точностью до миллисекунд
+    // РЎРµРґРµСЃС‹ РІСЂРµРјРµРЅРё РґРЅСЏ(Р±РµР· РґР°С‚С‹) СЃ С‚РѕС‡РЅРѕСЃС‚СЊСЋ РґРѕ РјРёР»Р»РёСЃРµРєСѓРЅРґ
     using Time = Pod<std::chrono::duration<uint32_t, std::milli>, PodTypeId::Time>;
     using TimeB = Pod<std::chrono::duration<uint32_t, std::milli>, PodTypeId::TimeB>;
 
-    // Седесы даты и времени в формате Unix с точностью до наносекунд
+    // РЎРµРґРµСЃС‹ РґР°С‚С‹ Рё РІСЂРµРјРµРЅРё РІ С„РѕСЂРјР°С‚Рµ Unix СЃ С‚РѕС‡РЅРѕСЃС‚СЊСЋ РґРѕ РЅР°РЅРѕСЃРµРєСѓРЅРґ
     using DateTime = Pod<std::chrono::nanoseconds, PodTypeId::DateTime>;
     using DateTimeB = Pod<std::chrono::nanoseconds, PodTypeId::DateTimeB>;
 
     //--------------------------------------------------------------------------
-	// Определения седесов для строковых типов
+	// РћРїСЂРµРґРµР»РµРЅРёСЏ СЃРµРґРµСЃРѕРІ РґР»СЏ СЃС‚СЂРѕРєРѕРІС‹С… С‚РёРїРѕРІ
 
 	using String8 = Range<UInt8, Char8, std::basic_string<ValueT<Char8>, std::char_traits<ValueT<Char8>>, std::allocator<ValueT<Char8>>>>;
     using String16 = Range<UInt16, Char8, std::basic_string<ValueT<Char8>, std::char_traits<ValueT<Char8>>, std::allocator<ValueT<Char8>>>>;
@@ -133,7 +133,7 @@ namespace serdes
 	using U32String = U32String32;
 
     //--------------------------------------------------------------------------
-    // Определения седесов для стандартных контейнеров
+    // РћРїСЂРµРґРµР»РµРЅРёСЏ СЃРµРґРµСЃРѕРІ РґР»СЏ СЃС‚Р°РЅРґР°СЂС‚РЅС‹С… РєРѕРЅС‚РµР№РЅРµСЂРѕРІ
 
     template<CSerdes TElementSerdes, typename TAllocator = std::allocator<ValueT<TElementSerdes>>>
     using Vector8 = Range<UInt8, TElementSerdes, std::vector<ValueT<TElementSerdes>, TAllocator>>;
@@ -172,7 +172,7 @@ namespace serdes
                       std::map<ValueT<TKeySerdes>, ValueT<TValueSerdes>, Compare, Allocator>>;
 
     //--------------------------------------------------------------------------
-    // Седесы для указателей
+    // РЎРµРґРµСЃС‹ РґР»СЏ СѓРєР°Р·Р°С‚РµР»РµР№
 
     template<CSerdes TSerdes>
     using Ptr = Pointer<TSerdes, ValueT<TSerdes> *>;
@@ -184,13 +184,13 @@ namespace serdes
     using SharedPtr = Pointer<TSerdes, shared_ptr<ValueT<TSerdes>>>;
 
     //--------------------------------------------------------------------------
-    // Седес для строковых констант
+    // РЎРµРґРµСЃ РґР»СЏ СЃС‚СЂРѕРєРѕРІС‹С… РєРѕРЅСЃС‚Р°РЅС‚
     template<ConstexprString str>
     using ConstString = Const<Array<Char, str.size()+1>, str>;
 
     //--------------------------------------------------------------------------
-    // Седес для байтового массива, размер которого можно получить
-    // с помощью функции-члена size() во время компиляции
+    // РЎРµРґРµСЃ РґР»СЏ Р±Р°Р№С‚РѕРІРѕРіРѕ РјР°СЃСЃРёРІР°, СЂР°Р·РјРµСЂ РєРѕС‚РѕСЂРѕРіРѕ РјРѕР¶РЅРѕ РїРѕР»СѓС‡РёС‚СЊ
+    // СЃ РїРѕРјРѕС‰СЊСЋ С„СѓРЅРєС†РёРё-С‡Р»РµРЅР° size() РІРѕ РІСЂРµРјСЏ РєРѕРјРїРёР»СЏС†РёРё
     template<auto ArrayObject>
     using ByteArray = Array<UInt8, ArrayObject.size()>;
 

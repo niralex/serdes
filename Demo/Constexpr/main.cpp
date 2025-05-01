@@ -11,19 +11,14 @@
     @author Niralex
 */
 //------------------------------------------------------------------------------
-#include <iostream>
 #include <cassert>
 #include <array>
 #include <Serdes/Serdes.hpp>
 
 //------------------------------------------------------------------------------
-
-using namespace std;
-using namespace serdes;
-
-//------------------------------------------------------------------------------
 int main()
 {
+    using namespace serdes;
 
     //Serializer-Deserializer type declaration
     using MySerdes = Array<UInt64, 3>;
