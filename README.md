@@ -89,6 +89,8 @@ int main()
     return 0;
 }
 ```
+## Usage example 3 (JSON serialization/deserialization)
+For a full usage example, see [Demo/JsonArray/main.cpp](./Demo/JsonArray/main.cpp).
 
 ## Installation and Usage
 To use the library, simply download the include folder, add its path to the compiler's search directories, and include the header file:

@@ -4,20 +4,21 @@
     @brief
 
     @details
+    The example demonstrates the creation and use of custom serdes for serialization and
+    deserialization of user-defined objects — in this case, nlohmann::json objects (https://json.nlohmann.me/)
+    with a predefined structure.
 
     @todo
-
 
     @author Niralex
 */
 //------------------------------------------------------------------------------
 
 #include <cassert>
-#include <iostream>
 #include <Serdes/Serdes.hpp>
 #include <nlohmann/json.hpp>
 //------------------------------------------------------------------------------
-// Пример json-строки
+// Example of a JSON string
 std::string jsonText = R"(
 [
   {
@@ -55,8 +56,11 @@ using namespace serdes;
 using namespace std::chrono;
 
 using Json = nlohmann::json;
+
+// Definition of a binary structure type corresponding to the JSON
 using Trade = vector<std::tuple<uint64_t, double, double, double, std::chrono::nanoseconds, bool, bool>>;
 
+// Function to convert JSON data to a Trade structure
 Trade FromJson(const Json &json)
 {
     Trade trade;
@@ -74,6 +78,7 @@ Trade FromJson(const Json &json)
     return trade;
 }
 
+// Function to convert a Trade object to its JSON representation
 void ToJson(const Trade& trade, Json& json)
 {
     auto FormatDouble = [](double value, int precision) -> std::string
@@ -83,7 +88,6 @@ void ToJson(const Trade& trade, Json& json)
         return oss.str();
     };
 
-    // Преобразование из вектора кортежей в json
     json = Json::array();
     for (const auto& [id, price, qty, quoteQty, time, isBuyerMaker, isBestMatch] : trade)
         json.push_back(
@@ -98,6 +102,7 @@ void ToJson(const Trade& trade, Json& json)
         });
 }
 
+// Definition of a serializer/deserializer
 using TradeSerdes = Custom<
     Json,
     Vector<Tuple<UInt64, Double, Double, Double, DateTime, Bool, Bool>>,
@@ -107,14 +112,14 @@ using TradeSerdes = Custom<
 //------------------------------------------------------------------------------
 int main()
 {
-    // Парсинг json-строки
+    // Parsing a JSON string
     auto json = Json::parse(jsonText);
 
-    // Сериализация
+    // Serialization
     auto buffer = Serialize<TradeSerdes>(json);
     assert(buffer.size() == 130);
 
-    // Десериализация в виде данных для работы в программе
+    // Deserialization into data for use in the program
     Trade trade;
     DeserializeFrom<TradeSerdes>(buffer.begin(), trade);
     auto [id, price, qty, quoteQty, time, isBuyerMaker, isBestMatch] = trade[1];
@@ -122,7 +127,7 @@ int main()
     assert(id == 28458);
     assert(isBestMatch == true);
 
-    // Десериализация в json
+    // Deserialization into JSON
     auto _json = DeserializeFrom<TradeSerdes>(buffer.begin());
     assert(_json == json);
 
