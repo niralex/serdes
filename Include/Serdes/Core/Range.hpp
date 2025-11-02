@@ -3,13 +3,12 @@
 //------------------------------------------------------------------------------
 /** @file
 
-    @brief Шаблон седесов для динамических диапазонов
+    @brief Base serdes template for ranges.
 
     @details
-        При сериализации в начало буфера записывается количество элементов диапазона,
-        а затем сериализуются сами элементы.
+        The serialized data format is identical for all derived serdes.
 
-        @todo
+    @todo
 
     @author Niraleks
 
@@ -19,20 +18,16 @@
 #include "Math.hpp"
 #include "Typeids.hpp"
 #include "Concepts.hpp"
+#include "Helpers.hpp"
 
 //------------------------------------------------------------------------------
 namespace serdes
 {
-    //--------------------------------------------------------------------------
-    /// Специальное значение, которое возвращает функция Sizeof(),
-    /// если размер значения превышает допустимый
-    inline constexpr uint32_t WRONG_SIZE = std::numeric_limits<uint32_t>::max();
 
-    //----------------------------------------------------------------------
-    /// Шаблон седеса для диапазонов
-    /// @tparam TSizeSerdes Седес для сериализации/десериализации количества элементов диапазона
-    /// @tparam TElementSerdes Седес для сериализации/десериализации элементов
-    /// @tparam TValueType Тип диапазона
+    /// Serdes template for ranges
+    /// @tparam TSizeSerdes Serdes used to serialize/deserialize the number of elements in the range
+    /// @tparam TElementSerdes Serdes used to serialize/deserialize individual elements
+    /// @tparam TValueType Range type
     template<
         CSerdes TSizeSerdes,
         CSerdes TElementSerdes,
@@ -40,21 +35,21 @@ namespace serdes
     requires (TSizeSerdes::Sizeof() == 1 || TSizeSerdes::Sizeof() == 2 || TSizeSerdes::Sizeof() == 4)
     struct Range
     {
-        /// Седес для сериализации/десериализации размера диапазона
+        /// Serdes for serializing/deserializing the range size
         using SizeSerdes = TSizeSerdes;
 
-        /// Тип размера диапазона
+        /// Range size type
         using SizeType = ValueT<SizeSerdes>;
 
-        /// Седес для сериализации/десериализации элементов диапазона
+        /// Serdes for serializing/deserializing range elements
         using ElementSerdes = TElementSerdes;
 
-        /// Тип элементов диапазона
+        /// Element type of the range
         using ElementType = ValueT<ElementSerdes>;
 
         using ValueType = TValueType;
 
-        // Длина поля с размером диапазона
+        /// Length of the size field (in bytes)
         static constexpr uint8_t sizelen = sizeof(ValueT<TSizeSerdes>);
 
         static consteval
@@ -69,29 +64,29 @@ namespace serdes
             return utils::Safe<utils::policy::MaxValue>::Add(
                     static_cast<uint32_t>(sizelen),
                     utils::Safe<utils::policy::MaxValue>::Mul(
-                        ElementSerdes::Sizeof(), // размер буфера для одного элемента
-                        static_cast<uint32_t>(std::numeric_limits<ValueT<TSizeSerdes>>::max()))); // вместимость контейнера
+                        ElementSerdes::Sizeof(),
+                        static_cast<uint32_t>(std::numeric_limits<ValueT<TSizeSerdes>>::max()))); 
         }
 
-        /// @note Функция может возвратить WRONG_SIZE, если при вычислении результата
-        /// произошло переполнение разрядной сетки или размер диапазона больше допустимого
+        /// @note This function may return WRONG_SIZE if an overflow occurs during computation
+        /// or if the range size exceeds the maximum allowed value
         template<std::ranges::forward_range TRange>
         [[nodiscard]] static constexpr
         uint32_t Sizeof(const TRange &range)
         {
-            // Проверка размера диапазона
+            // Validate range size
             if(std::ranges::size(range) > std::numeric_limits<SizeType>::max())
                 return WRONG_SIZE;
 
             uint32_t bufSize = SizeSerdes::Sizeof();
 
-            // Если седес элементов диапазона использует статический буфер
+            // If the element serdes uses a static buffer
             if constexpr (ElementSerdes::GetBufferType() == BufferType::Static)
                 bufSize = utils::Safe<utils::policy::MaxValue>::Add(bufSize,
                                     utils::Safe<utils::policy::MaxValue>::Mul(static_cast<uint32_t>(std::ranges::size(range)),
                                                                 ElementSerdes::Sizeof()));
 
-            else // Cедес элементов диапазона использует динамический буфер, поэтому нужно просуммировать размеры всех элементов
+            else // The element serdes uses a dynamic buffer
                 for(const auto &value: range)
                     bufSize = utils::Safe<utils::policy::MaxValue>::Add(bufSize, ElementSerdes::Sizeof(value));
 
@@ -102,58 +97,13 @@ namespace serdes
         static constexpr
         TOutputIterator SerializeTo(TOutputIterator bufpos, const TRange &range)
         {
-            // Сериализация размера диапазона
+            // Serialize the range size
             bufpos = SizeSerdes::SerializeTo(bufpos, std::ranges::size(range));
 
-            // Сериализация элементов диапазона
+            // Serialize range elements
             for(const auto &element: range)
                 bufpos = ElementSerdes::SerializeTo(bufpos, element);
 
-            return bufpos;
-        }
-
-        /// @note Если десериализованный размер диапазона некорректен, то возможен выход за границы буфера
-        /// @throw std::out_of_range Исключение происходит если у заданного диапазона нет функции insert()
-        /// или resize(), а размер текущего диапазона меньше необходимого
-        template<CInputIterator TInputIterator, std::ranges::forward_range TRange>
-        static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, TRange &range)
-        {
-            // Десериализация размера последовательности
-            SizeType rangeSize{0};
-            bufpos = SizeSerdes::DeserializeFrom(bufpos, rangeSize);
-
-            // Если range является ассоциативным контейнером типа std::map, std::set и подобным.
-            if constexpr (!requires { range.resize(rangeSize); } &&
-                           requires { range.insert(std::ranges::range_value_t<TRange>{}); })
-            {
-                // Последовательная десериализация и вставка элементов
-                for(SizeType i = 0; i < rangeSize; i++)
-                {
-                    ElementType value{};
-                    bufpos = ElementSerdes::DeserializeFrom(bufpos, value);
-                    range.insert(std::move(static_cast<std::ranges::range_value_t<TRange>>(value)));
-                }
-            }
-            else
-            {
-                // Если range поддерживает изменение размера
-                if constexpr (requires { range.resize(rangeSize); })
-                    range.resize(rangeSize);
-                else
-                {
-                    // Диапазон должен иметь размер не меньше десериализованного размера rangeSize
-                    size_t n = std::ranges::size(range);
-                    if (n < rangeSize)
-                        throw std::out_of_range("Serdes/Core/Range.hpp/Deserialize(): incorrect range size");
-                }
-
-                // Десериализация элементов
-                auto element = std::ranges::begin(range);
-                for(size_t i = 0; i < rangeSize; i++)
-                    bufpos = ElementSerdes::DeserializeFrom(bufpos, *element++);
-
-            }
             return bufpos;
         }
     };
@@ -162,4 +112,3 @@ namespace serdes
 
 //------------------------------------------------------------------------------
 #endif
-
