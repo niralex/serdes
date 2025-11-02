@@ -3,40 +3,54 @@
 //------------------------------------------------------------------------------
 /** @file
 
-    @brief  Сериализатор/десериализатор значений через указатель без учета значения nullptr
+    @brief  Serializer/deserializer via pointer without handling nullptr
 
     @details
-        В отличии от Pointer, седес Reference предполагает, что указатель не может принимать
-        значения nullptr, т.е. концептуально соответствует ссылке на значение.
+        The Reference serdes is similar to Pointer but differs in the following ways:
 
-        Если при десериализации указатель равен nullptr, то память выделяется с помощью ператора new
-        Иначе память не выделяется и десериализуется объект по адресу.
+        1) Reference cannot serialize or deserialize nullptr values.
+           If nullptr is passed to the serialization or Sizeof functions, an exception is thrown.
+           Reference is intended solely for serializing guaranteed non-null values through a pointer.
+           During deserialization, a nullptr pointer may be passed; in this case,
+           memory is allocated using the provided allocator (just like in Pointer).
+           Otherwise, no allocation occurs, and the object is deserialized in-place.
+
+        2) Pointer always has SerdesTypeId::Variant, whereas Reference inherits the base serdes type:
+           Reference::GetSerdesTypeId() == Reference::SerdesType::GetSerdesTypeId()
+
+        3) Pointer always uses a dynamic buffer, while Reference inherits the buffer type from the base serdes:
+           Reference::GetBufferType() == Reference::SerdesType::GetBufferType()
+
+        4) A value serialized with Reference occupies one byte less in the buffer than with Pointer.
 
     @todo
-
 
     @author Niraleks
 */
 //------------------------------------------------------------------------------
 #include "Typeids.hpp"
 #include "Concepts.hpp"
+#include "Helpers.hpp"
+#include "Exception.hpp"
 
 using namespace std;
 
 //------------------------------------------------------------------------------
 namespace serdes
 {
-    //--------------------------------------------------------------------------
-    /// Седес для указателей (без учета значения nullptr)
-    /// @tparam TSerdes - базовый седес для значений на которые указывает указатель
-    /// @tparam TPointer - тип указателя
-    template<CSerdes TSerdes, CPointerLike<ValueT<TSerdes>> TPointer>
+    /// @tparam TSerdes - base serdes for the values pointed to
+    /// @tparam TPointer - pointer type
+    template<CSerdes TSerdes,
+             CPointerLike<ValueT<TSerdes>> TPointer,
+             typename Allocator = details::DefaultAllocator<TSerdes>>
     struct Reference
     {
-        //using ValueType = ValueT<TSerdes>;
-        using ValueType = TPointer;
+        using ValueType = ValueT<TSerdes>;
 
         using SerdesType = TSerdes;
+
+        constexpr inline static
+        Allocator alloc{};
 
         static consteval
         SerdesTypeId GetSerdesTypeId() { return SerdesType::GetSerdesTypeId(); }
@@ -49,29 +63,39 @@ namespace serdes
 
         template<CPointerLike<ValueT<SerdesType>> TPtr>
         [[nodiscard]] static constexpr
-        uint32_t Sizeof(const TPtr &ptr)
+        uint32_t Sizeof(const TPtr &refer)
         {
-            return SerdesType::Sizeof(*ptr);
+            if(refer)
+                return SerdesType::Sizeof(*refer);
+            else
+                utils::Throw<std::invalid_argument>("Pointer must not be null");
         }
+
+        // Handles Reference<>::Sizeof(nullptr);
+        [[nodiscard]] static
+        uint32_t Sizeof(std::nullptr_t) { utils::Throw<std::invalid_argument>("Pointer must not be null"); }
 
         template<COutputIterator TOutputIterator, CPointerLike<ValueT<SerdesType>> TPtr>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const TPtr &pvalue)
+        TOutputIterator SerializeTo(TOutputIterator bufpos, const TPtr &refer)
         {
-            return SerdesType::SerializeTo(bufpos, *pvalue);
+            if(refer)
+                return SerdesType::SerializeTo(bufpos, *refer);
+            else
+                throw std::invalid_argument("Serdes/Core/Reference.hpp/SerializeTo(..., const TPtr &refer): refer must not be null");
         }
 
         template<CInputIterator TInputIterator, CPointerLike<ValueT<SerdesType>> TPtr>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, TPtr &pvalue)
+        TInputIterator DeserializeFrom(TInputIterator bufpos, TPtr &refer)
         {
-            if(!pvalue) // если указатель нулевой
-                pvalue = TPtr(new ValueT<SerdesType>);
-            return SerdesType::DeserializeFrom(bufpos, *pvalue);
+            if(!refer)
+                alloc(refer);
+            return SerdesType::DeserializeFrom(bufpos, *refer);
         }
     };
 
-} // serdes
+} // namespace serdes
 
 //------------------------------------------------------------------------------
 #endif

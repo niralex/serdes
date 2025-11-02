@@ -4,9 +4,9 @@
 //------------------------------------------------------------------------------
 /** @file
 
-	@brief Главный подключаемый файл библиотеки
+	@brief Main header file of the library
 
-	@details Для использовани¤ библиотеки достаточно подключить только этот файл.
+	@details Including only this file is sufficient to use the library.
 
     @todo
 

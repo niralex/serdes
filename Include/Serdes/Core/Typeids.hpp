@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 /** @file
 
-	@brief Перечисления идентификаторов типов
+	@brief Definitions of core types and special values
 
 	@details
 
@@ -19,27 +19,25 @@
 //------------------------------------------------------------------------------
 namespace serdes
 {
-    //--------------------------------------------------------------------------
-    /// ѕеречисление типов седесов
+    /// Enumeration of serdes types
     enum class SerdesTypeId : uint8_t
     {
-        Null,   // специальное значение (дл¤ ограничени¤ списка дескрипторов)
+        // special value (used to delimit descriptor lists)
+        Null,
         Pod,
         Range,
         Array,
         Tuple,
         Variant,
-        Const
+        Const,
     };
 
-    //--------------------------------------------------------------------------
-    /// ѕеречисление типов значений POD-седесов
-    // ћладший бит кодирует пор¤док байт
-    // (четные идентификаторы - little-endian, нечетные - big-endian)
-    enum class PodTypeId : uint8_t // GetValueTypeId() == PodTypeId::Pod   Vti Sti
+    /// Enumeration of value types for POD serdes
+    // The least significant bit encodes endianness:
+    // even IDs = little-endian, odd IDs = big-endian
+    enum class PodTypeId : uint8_t
     {
-        UChar8    = 0,
-        Char8     = 1,
+        Char8     = 0,
         Char16    = 2,
         Char16B   = 3,
         Char32    = 4,
@@ -77,24 +75,19 @@ namespace serdes
         DateTime  = 74,
         DateTimeB = 75,
         Bool      = 128,
-        Unspecified = 130, // неопределенный Pod-тип
+        Unspecified = 130, // unspecified POD type
     };
 
-    //--------------------------------------------------------------------------
-    /// ѕеречисление типов буферов
+    /// Enumeration of buffer types
     enum class BufferType : bool
     {
-        Static, // размер буфера можно определить на этапе компил¤ции без значени¤
-        Dynamic // необходимый размер буфера можно определить по значению
+        Static,  // buffer size can be determined at compile time without a value
+        Dynamic  // required buffer size can be determined only from a value
     };
 
-    //--------------------------------------------------------------------------
-    /// Ўаблон сокращенной записи базового типа седеса
-    template<typename TSerdes>
-    using ValueT = typename TSerdes::ValueType;
+    /// Special value returned by Sizeof() when the size exceeds the allowed limit
+    inline constexpr uint32_t WRONG_SIZE = std::numeric_limits<uint32_t>::max();
 }
 
 //------------------------------------------------------------------------------
 #endif
-
-

@@ -3,7 +3,7 @@
 //------------------------------------------------------------------------------
 /** @file
 
-    @brief  Сериализатор/десериализатор одного из множества заденных типов
+    @brief  Serializer/deserializer for one of several predefined types
 
     @details
 
@@ -16,6 +16,7 @@
 #include <algorithm>
 #include "Typeids.hpp"
 #include "Concepts.hpp"
+#include "Helpers.hpp"
 #include "Pod.hpp"
 
 using namespace std;
@@ -24,8 +25,8 @@ using namespace std;
 namespace serdes
 {
     //--------------------------------------------------------------------------
-    /// Шаблон седеса Variant
-    /// @tparam TSerdes Список седесов для сериализации/десериализации
+    /// Variant serdes template
+    /// @tparam TSerdes List of serdes for serialization/deserialization
     template<CSerdes ...TSerdes>
     requires (sizeof...(TSerdes) > 0)
     struct Variant
@@ -34,15 +35,15 @@ namespace serdes
 
         using SerdesList = std::tuple<TSerdes...>;
 
-        /// Определение индекса седеса в списке TSerdes
-        /// который подходит для сериализации/десериализации типа TValue
+        /// Determines the index of the serdes in TSerdes that matches type TValue
+        /// for serialization/deserialization
         template <typename TValue>
         requires std::disjunction_v<is_same<TValue, ValueT<TSerdes>>...>
         static consteval inline
         uint8_t GetIndex()
         {
             uint8_t index = 0;
-            ((is_same_v<TValue, ValueT<TSerdes>> ? false : (index++, true)) && ...);
+            ((void)((is_same_v<TValue, ValueT<TSerdes>> ? false : (index++, true)) && ...));
             return index;
         }
 
@@ -55,10 +56,8 @@ namespace serdes
         static consteval
         BufferType GetBufferType()
         {
-            // Если один из составляющих седесов динамический или
-            // размеры всех седесов не равны, то седес является динамическим
-            // Т.е. седес Variant может быть статическим только если все составляющие
-            // его седесы статические и имеют одинаковый размер Sizeof()
+            // Variant serdes can be static only if all constituent serdes are static
+            // and have the same Sizeof() value
             return (((TSerdes::GetBufferType() == BufferType::Dynamic) || ... ) ||
                     ((TSerdes::Sizeof() != std::tuple_element_t<0, std::tuple<TSerdes...>>::Sizeof()) || ...))
                     ? BufferType::Dynamic : BufferType::Static;
@@ -84,22 +83,21 @@ namespace serdes
             return std::visit([](const auto &v) { return Sizeof(v); }, value);
         }
 
-        /// Сериализация значения одного из базовых типов
-        // Тип TValue должен быть одним из базовых типов седесов
-        // составляющих список типов Variant
+        /// Serializes a value of one of the base types
+        // TValue must be one of the base types defined by the serdes in the Variant's type list
         template<COutputIterator TOutputIterator, typename TValue>
         requires std::disjunction_v<is_same<TValue, ValueT<TSerdes>>...>
         static constexpr
         TOutputIterator SerializeTo(TOutputIterator bufpos, const TValue &value)
         {
-            // Сериализация индекса
+            // Serialize the type index
             bufpos = Pod<uint8_t>::SerializeTo(bufpos, GetIndex<TValue>());
 
-            // Сериализация значения
+            // Serialize the value
             return MatchSerdes<TValue>::SerializeTo(bufpos, value);
         }
 
-        /// Сериализация базового типа
+        /// Serializes a std::variant value
         template<COutputIterator TOutputIterator>
         static constexpr
         TOutputIterator SerializeTo(TOutputIterator bufpos, const ValueType &value)
@@ -107,32 +105,32 @@ namespace serdes
             return std::visit([bufpos](const auto &v) { return SerializeTo(bufpos, v); }, value);
         }
 
-        /// Десериализация базового типа
-        // Функция не проверяет десериализованный индекс типа
-        // В случае, если индекс больше либо равен количесту типов составляющих Variant
-        // десериализации не происходит, значение value сохраняется и возвращается итератор равный bufpos
+        /// Deserializes a std::variant value
+        // This function does not validate the deserialized type index.
+        // If the index is >= the number of types in the Variant,
+        // no deserialization occurs, the `value` remains unchanged,
+        // and the function returns the original `bufpos` iterator.
         template<CInputIterator TInputIterator>
         static constexpr
         TInputIterator DeserializeFrom(TInputIterator bufpos, ValueType &value)
         {
-            // Десериализация индекса седеса
+            // Deserialize the serdes index
             uint8_t index;
             bufpos = Pod<uint8_t>::DeserializeFrom(bufpos, index);
 
-            // Последовательное сравнение десериализованного индекса с индексами седесов в пакете.
-            // Когда индексы совпадают, выполняется десериализация значения std::variant соответствующего типа
-            return [index, &value]<size_t ...I>(TInputIterator bufpos, std::index_sequence<I...>)constexpr
+            // Sequentially compare the deserialized index with the indices of serdes in the pack.
+            // When a match is found, deserialize into the std::variant at the corresponding type index.
+            return [index, &value]<size_t ...I>(TInputIterator bufpos, std::index_sequence<I...>) constexpr
             {
-                ((index == I ? (bufpos = std::tuple_element_t<I, SerdesList>::DeserializeFrom(bufpos, value.template emplace<I>()), false) : true) && ...);
+                ((void)((index == I ? (bufpos = std::tuple_element_t<I, SerdesList>::DeserializeFrom(bufpos, value.template emplace<I>()), false) : true) && ...));
                 return bufpos;
             }(bufpos, std::make_index_sequence<sizeof...(TSerdes)>{});
         }
 
-        /// Десериализация значения одного из составляющих типов
-        // Функция может использоваться когда тип сериализованного
-        // значения точно известен или когда значение одного типа нужно
-        // десериализовать как значение другого(при условии совпадения размеров).
-        // Ошибка типа может приводить к выходу за границы буфера.
+        /// Deserializes a value of one of the constituent types
+        // This function can be used when the serialized type is known exactly,
+        // or when deserializing a value of one type as another (provided sizes match).
+        // Type mismatches may lead to buffer overruns.
         template<CInputIterator TInputIterator, typename TValue>
         requires std::disjunction_v<is_same<TValue, ValueT<TSerdes>>...>
         static constexpr
@@ -140,10 +138,9 @@ namespace serdes
         {
             return MatchSerdes<TValue>::DeserializeFrom(bufpos + 1, value);
         }
-
     };
 
-} // serdes
+} // namespace serdes
 
 //------------------------------------------------------------------------------
 #endif

@@ -3,7 +3,7 @@
 //------------------------------------------------------------------------------
 /**	@file
 
-    @brief  Определения концептов
+    @brief  Concept definitions
 
 	@details
 
@@ -18,8 +18,8 @@
 //------------------------------------------------------------------------------
 namespace serdes
 {
-    //--------------------------------------------------------------------------
-    /// Концепт седеса (сериализатора-десериализатора)
+
+    /// Serdes (serializer-deserializer) concept
     template<typename TSerdes>
     concept CSerdes = requires(
         uint8_t                           *bufpos,
@@ -27,62 +27,59 @@ namespace serdes
         typename TSerdes::ValueType       &value,
         const typename TSerdes::ValueType &cvalue)
     {
-        /// Требование определения базового типа для которого предназначен седес
+        /// Requirement: the base type for which the serdes is intended must be defined
         typename TSerdes::ValueType;
 
-        /// Требование наличия функций определения размера значений в сериализованном виде.
-        { TSerdes::Sizeof() } -> std::same_as<uint32_t>;       // максимально возможное
-        { TSerdes::Sizeof(cvalue) } -> std::same_as<uint32_t>; // для конкретного значения
+        /// Requirement: presence of a function to obtain the serdes type identifier
+        { TSerdes::GetSerdesTypeId() } -> std::same_as<SerdesTypeId>;
 
-        /// Требование наличия функций определения типа буфера.
+        /// Requirement: functions to determine the serialized size of values must exist
+        { TSerdes::Sizeof() } -> std::same_as<uint32_t>;       // maximum possible size
+        { TSerdes::Sizeof(cvalue) } -> std::same_as<uint32_t>; // size for a specific value
+
+        /// Requirement: functions to determine the buffer type must exist.
         { TSerdes::GetBufferType() } -> std::same_as<BufferType>;
 
-        /// Требование определения функции сериализации в подготовленный буфер.
-        /// @param bufpos Итератор на позицию в буфере, начиная с которой необходимо выводить сериализованное значение
-        /// @param value константная ссылка на значение, которое необходимо сериализовать.
-        /// @return Итератор на позицию в буфере, следующую за сериализованным значением
-        /// @note Функция не проверяет выход за границы буфера.
+        /// Requirement: a serialization function into a pre-allocated buffer must exist.
+        /// @param bufpos Iterator pointing to the buffer position where serialization should start
+        /// @param value Constant reference to the value to be serialized
+        /// @return Iterator pointing to the buffer position immediately after the serialized value
+        /// @note This function does not perform bounds checking.
         { TSerdes::SerializeTo(bufpos, cvalue) } -> std::output_iterator<uint8_t>;
 
-        /// Требование наличия функции десериализации из указанного буфера.
-        /// @param cbufpos Итератор на позицию в буфере с сериализованным значением.
-        /// @param[out] value Ссылка на переменную, куда будет десериализовано значение
-        /// @return Итератор на позицию в буфере, следующую за десериализованным значением
-        /// @note Функция не проверяет выход за границы буфера.
+        /// Requirement: a deserialization function from a given buffer must exist.
+        /// @param cbufpos Iterator pointing to the serialized value in the buffer
+        /// @param[out] value Reference to the variable where the deserialized value will be stored
+        /// @return Iterator pointing to the buffer position immediately after the deserialized value
+        /// @note This function does not perform bounds checking.
         { TSerdes::DeserializeFrom(cbufpos, value) } -> std::input_iterator;
 
     };
 
-    //--------------------------------------------------------------------------
-    /// Концепт итератора вывода
-    // в отличие стандартного(std::output_iterator) требует только один параметр
+    /// Output iterator concept
+    // Unlike the standard std::output_iterator, this concept takes only one parameter
     template<typename TIterator>
     concept COutputIterator = std::output_iterator<TIterator, uint8_t>
                               || std::output_iterator<TIterator, std::byte>;
 
-    //--------------------------------------------------------------------------
-    /// Концепт итератора ввода
-    // Идентичен стандартному, добавлен для поддержки единообразия кода
+    /// Input iterator concept
+    // Identical to the standard concept; added for code consistency
     template<typename TIterator>
     concept CInputIterator = std::input_iterator<TIterator>;
 
-    //--------------------------------------------------------------------------
-    /// Концепт, определяющий требовние к типу T, чтобы он был одним из типов в пакете Ts...
+    /// Concept requiring type T to be one of the types in the pack Ts...
     template<typename T, typename ... Ts>
     concept IsAnyOf = (std::same_as<T, Ts> || ...);
 
-    //--------------------------------------------------------------------------
-    /// Концепт Pod-типов
+    /// POD types concept
     template<typename ...T>
     concept CPod = ((std::is_standard_layout_v<T> && std::is_trivial_v<T>) && ...);
 
-    //--------------------------------------------------------------------------
-    /// Концепт проверяющий возможность явной конвертации из типа From в тип To
+    /// Concept checking whether type From can be explicitly converted to type To
     template<typename From, typename To>
     concept CExplicitlyConvertible = requires(From ob) { static_cast<To>(ob); };
 
-    //--------------------------------------------------------------------------
-    /// Концепт, проверяющий, является ли тип T подобным кортежу (tuple-like)
+    /// Concept checking whether type T is tuple-like
     namespace details
     {
         template<class T>
@@ -104,8 +101,7 @@ namespace serdes
     template<class T>
     concept CTupleLike = details::isTupleLikeV<std::remove_cvref_t<T>>;
 
-    //--------------------------------------------------------------------------
-    // Концепт указателя на тип T
+    /// Pointer-like concept for type TPointer pointing to type T
     template <typename TPointer, typename T>
     concept CPointerLike =
     requires (TPointer ptr)

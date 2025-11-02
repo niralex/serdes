@@ -3,20 +3,15 @@
 //------------------------------------------------------------------------------
 /** @file
 
-    @brief  Шаблон седесов для простых пользовательских структур
+    @brief  Serdes template for simple user-defined structs
 
     @details
+        The Struct template is not a standalone serdes type but allows defining serdes aliases
+        for user-defined structs. The struct/class members must be either public,
+        or the serdes must be declared as a friend of the class.
+        The serdes on which the Struct-based serdes is built is called the base serdes (Struct::BaseSerdes).
 
-        Шаблон Struct не является отдельным типом седеса, а только позволяет определить псевдоним другого седеса
-        для пользовательской структуры/класса. Поля структуры/класса должны быть либо открытыми, либо седес должен
-        быть объявлен другом.
-        Седес, на основе которого опрелен Struct-седес, является базовым (Struct::BaseSerdes)
-
-        Задача решаемая шаблоном Struct - представить пользовательский тип в виде комбинации
-        базовых типов, для которых уже определены седесы. Struct-седесы имеют такие же идентификаторы и тот же
-        дескриптор, как у базового седеса.
-
-        @todo
+    @todo
 
     @author Niraleks
 
@@ -24,21 +19,22 @@
 //------------------------------------------------------------------------------
 #include "Typeids.hpp"
 #include "Concepts.hpp"
+#include "Helpers.hpp"
 
 //------------------------------------------------------------------------------
 namespace serdes
 {
-    //--------------------------------------------------------------------------
-    /// Шаблон седеса для простых структур
-    /// @tparam TStruct тип структуры/класса для которой определяется седес
-    /// @tparam TSerdes Седес который будет использоваться как базовый
-    /// @tparam Fields указатели на поля-члены структуры/класса
+
+    /// Serdes template for structs
+    /// @tparam TStruct Struct/class type for which the serdes is defined
+    /// @tparam TSerdes Serdes used as the base serdes
+    /// @tparam Fields Pointers to member fields of the struct/class
     template<typename TStruct, CSerdes TSerdes, auto ...Fields>
     struct Struct
     {
         using ValueType = TStruct;
 
-        /// Базовый седес, который используется для сериализации/десериализации структуры
+        /// Base serdes used for serializing/deserializing the struct
         using BaseSerdes = TSerdes;
 
         static consteval
@@ -49,7 +45,6 @@ namespace serdes
 
         [[nodiscard]] static constexpr
         uint32_t Sizeof() { return BaseSerdes::Sizeof(); }
-
 
         [[nodiscard]] static constexpr
         uint32_t Sizeof(const ValueType &ob)
@@ -72,9 +67,7 @@ namespace serdes
         }
     };
 
-} // serdes
-
+} // namespace serdes
 
 //------------------------------------------------------------------------------
 #endif
-

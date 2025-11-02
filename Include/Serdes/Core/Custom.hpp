@@ -3,46 +3,55 @@
 //------------------------------------------------------------------------------
 /** @file
 
-    @brief Шаблоны для определения пользовательских седесов
+    @brief Templates for defining custom serdes
 
-    @details Шаблон Custom не является отдельным типом седеса, а только позволяет определить
-        псевдоним другого седеса для пользовательского типа.
-        Седес, на основе которого опрелен Custom-седес является базовым (Custom::BaseSerdes).
-        Седес может сериализовывать как пользовательские объекты, так и значения базового типа.
+    @details 
+		The Custom template is not a standalone serdes type; it only allows defining
+        an alias of another serdes for a user-defined type.
+        The serdes on which the Custom serdes is based is called the base serdes (Custom::BaseSerdes).
+        The serdes can serialize both user-defined objects and values of the base type.
+        To define a custom serializer, conversion functions must be provided.
+        When defining a Custom serdes, the user must supply functors for converting
+        between their type and the base serdes's ValueType. This approach ensures that
+        serialization/deserialization is performed solely using already-defined serdes,
+        preventing users from implementing their own algorithms or formats.
+        Ultimately, this improves code reliability by relying on a known set of
+        base serializers, with all custom serializers built on top of them.
 
-        Шаблон Custom является более гибким, но медленным по сравнению с седесом Struct.
+        The Custom template is more flexible but slower compared to the Struct serdes.
 
-        @todo
+    @todo
 
     @author Niraleks
 
 */
 //------------------------------------------------------------------------------
 #include "Concepts.hpp"
+#include "Helpers.hpp"
 
 //------------------------------------------------------------------------------
 namespace serdes
 {
     //--------------------------------------------------------------------------
-    /// Шаблон седеса для пользовательских типов
-    /// @tparam TValue Пользовательский тип
-    /// @tparam TSerdes Базовый седес, который используется для пользовательского типа
-    /// @tparam ValueTo Вызываемая сущность(указатель на функцию, функтор или лямбда) для
-    /// преобразования значения пользовательского типа к значению типа TSerdes::ValueType
-    /// @tparam ValueFrom Вызываемая сущность(указатель на функцию, функтор или лямбда)
-    /// для преобразования значения типа TSerdes::ValueType в значение типа TValue
+    /// Serdes template for user-defined types
+    /// @tparam T User-defined type
+    /// @tparam TBaseSerdes Base serdes used for the user-defined type
+    /// @tparam ConvToBase Callable entity (function pointer, functor, or lambda) that
+    /// converts a value of the user-defined type to a value of type TBaseSerdes::ValueType
+    /// @tparam ConvFromBase Callable entity (function pointer, functor, or lambda) that
+    /// converts a value of type TBaseSerdes::ValueType to a value of type T
     template<typename T, CSerdes TBaseSerdes,
-             auto ConvToBase = [](const ValueT<TBaseSerdes> &baseValue){ return static_cast<ValueT<TBaseSerdes>>(baseValue); }, //[](const T &ob) { return static_cast<ValueT<TBaseSerdes>>(ob); },
+             auto ConvToBase = [](const ValueT<TBaseSerdes> &baseValue){ return static_cast<ValueT<TBaseSerdes>>(baseValue); },
              auto ConvFromBase = [](ValueT<TBaseSerdes> &&baseValue, T &ob){ ob = static_cast<T>(baseValue); }>
     struct Custom
     {
-        // Тип значений
+        // Value type
         using ValueType = T;
 
-        // Базовый седес
+        // Base serdes
         using BaseSerdes = TBaseSerdes;
 
-        // Базовый тип
+        // Base value type
         using BaseValueType = ValueT<BaseSerdes>;
 
         static consteval

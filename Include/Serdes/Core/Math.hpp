@@ -3,11 +3,10 @@
 //------------------------------------------------------------------------------
 /**	@file
 
-    @brief Безопасные математические функции
+    @brief Safe mathematical functions
 
-    @details В модуле определен ряд математических функций, которые учитывают переполнение
-        разярадной сетки. Поведение функций при возниконовении переполнения определяется политикой,
-        которая указывается при вызове функции.
+    @details This module defines a set of mathematical functions that detect arithmetic overflow.
+        The behavior upon overflow is determined by a policy specified at the call site.
 
     @todo
 
@@ -19,32 +18,29 @@
 //------------------------------------------------------------------------------
 namespace utils
 {
-    //--------------------------------------------------------------------------
-    /// Перечисление типов ошибок в математических функциях
+    /// Enumeration of error types for mathematical functions
     enum class MathError : uint8_t
     {
-        overflow = 1 // переполнение разрядной сетки
+        overflow = 1 // arithmetic overflow
 
         // ...
     };
 
-    //--------------------------------------------------------------------------
-    /// Концепт политики обработки ошибок математических операций
+    /// Concept for error-handling policies in mathematical operations
     template<typename TPolicy>
     concept CMathErrorPolicy = requires(MathError e, const char *msg)
     {
-        /// Требование определения constexpr static функции, которая обрабатывает ошибку.
-        /// @param e  тип ошибки (MathError),
-        /// @param left, right Левый и правый аргументы математической операции
-        /// @param msg Cтрока с текстовым сообщением об ошибке.
+        /// Requirement: a constexpr static function that handles errors must be defined.
+        /// @param e  error type (MathError),
+        /// @param left, right Left and right operands of the mathematical operation
+        /// @param msg C-style string containing an error message.
         { TPolicy::Handle(e, 0, 0, msg) } -> std::convertible_to<uint64_t>;
     };
 
-    //--------------------------------------------------------------------------
-    /// Пространство имен для политик обработки ошибок, возникающих при математических операциях
+    /// Namespace for error-handling policies used in mathematical operations
     namespace policy
     {
-        /// Генерируется исключение типа std::runtime_error
+        /// Throws an exception of type std::runtime_error
         struct Exception
         {
             template<typename T>
@@ -62,7 +58,7 @@ namespace utils
             }
         };
 
-        /// Возвращается максимально возможное значение для типа T
+        /// Returns the maximum representable value for type T
         struct MaxValue
         {
             template<typename T>
@@ -70,7 +66,7 @@ namespace utils
             T Handle(MathError, T, T, const char *) { return std::numeric_limits<T>::max(); }
         };
 
-        /// Возвращается минимально возможное значение для типа T
+        /// Returns the minimum representable value for type T
         struct MinValue
         {
             template<typename T>
@@ -78,7 +74,7 @@ namespace utils
             T Handle(MathError, T, T, const char *) { return std::numeric_limits<T>::min(); }
         };
 
-        /// Возвращается наибольший аргумент
+        /// Returns the larger of the two operands
         struct MaxArg
         {
             template<typename T>
@@ -86,7 +82,7 @@ namespace utils
             T Handle(MathError, T l, T r, const char *) { return std::max(l, r); }
         };
 
-        /// Возвращается наименьший аргумент
+        /// Returns the smaller of the two operands
         struct MinArg
         {
             template<typename T>
@@ -94,7 +90,7 @@ namespace utils
             T Handle(MathError, T l, T r, const char *) { return std::min(l, r); }
         };
 
-        /// Возвращается аргумент, стоящий слева от знака операции
+        /// Returns the left operand
         struct LeftArg
         {
             template<typename T>
@@ -102,7 +98,7 @@ namespace utils
             T Handle(MathError e, T l, T r, const char *msg) { return l; }
         };
 
-        /// Возвращается аргумент, стоящий справа от знака операции
+        /// Returns the right operand
         struct RightArg
         {
             template<typename T>
@@ -110,7 +106,7 @@ namespace utils
             T Handle(MathError, T, T r, const char *) { return r; }
         };
 
-        /// Возвращается нуль
+        /// Returns zero
         struct Null
         {
             template<typename T>
@@ -119,19 +115,18 @@ namespace utils
         };
     }
 
-    //--------------------------------------------------------------------------
-    /// Структура определяющая математические функции
-    /// @tparam Policy Политика обработки ошибок
+    /// Structure defining safe mathematical functions
+    /// @tparam Policy Error-handling policy
     template<CMathErrorPolicy Policy>
     struct Safe
     {
-        //----------------------------------------------------------------------
-        /// Сложение беззнаковых целых числел с учетом переполнения
-        /// @return Если возникает переполнение разрядной сетки, то генерируется исключение
-        /// или возвращается значение определяемое политикой Policy
+        /// Addition of unsigned integers with overflow detection
+        /// @return If an overflow occurs, either an exception is thrown
+        /// or a value determined by the Policy is returned
         template<typename T>
         requires std::is_unsigned_v<T>
-        [[nodiscard]] static constexpr T Add(T l, T r)
+        [[nodiscard]] static constexpr 
+		T Add(T l, T r)
         {
             T res(l + r);
             if(res < l)
@@ -139,22 +134,21 @@ namespace utils
             return res;
         }
 
-        //--------------------------------------------------------------------------
-        /// Умножение беззнаковых целых с учетом переполнения
-        /// @return Если возникает переполнение разрядной сетки, то генерируется исключение
-        /// или возвращается значение определяемое политикой Policy
+        /// Multiplication of unsigned integers with overflow detection
+        /// @return If an overflow occurs, either an exception is thrown
+        /// or a value determined by the Policy is returned
         template<typename T>
         requires std::is_unsigned_v<T>
-        [[nodiscard]] static constexpr T Mul(T l, T r)
+        [[nodiscard]] static constexpr 
+		T Mul(T l, T r)
         {
-            if(r !=0 && std::numeric_limits<T>::max()/r < l)
+            if(r != 0 && std::numeric_limits<T>::max() / r < l)
                 return Policy::Handle(MathError::overflow, l, r, "Serdes/Core/Math.hpp/Mul(): overflow occurred");
             else
                 return l * r;
         }
     };
-    //--------------------------------------------------------------------------
 
-} // utils
+} // namespace utils
 //------------------------------------------------------------------------------
 #endif

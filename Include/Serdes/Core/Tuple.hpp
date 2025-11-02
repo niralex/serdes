@@ -3,10 +3,11 @@
 //------------------------------------------------------------------------------
 /** @file
 
-    @brief  Шаблон седеса для кортежа
+    @brief  Serdes template for tuples
 
-    @details Вложенные седесы могут быть любого типа, включая другие кортежи.
-        Для основных функций есть версии, которые принимают элементы кортежа в виде пакета параметров.
+    @details Nested serdes can be of any type, including other tuples.
+        The main functions of the Tuple serdes have overloaded versions
+        that accept tuple elements as a parameter pack.
 
     @todo
 
@@ -17,18 +18,18 @@
 #include "Math.hpp"
 #include "Typeids.hpp"
 #include "Concepts.hpp"
+#include "Helpers.hpp"
 
 //------------------------------------------------------------------------------
 namespace serdes
 {
-    //--------------------------------------------------------------------------
-    /// @tparam Ts Пакет седесов для элементов кортежа
+    /// @tparam TSerdes Pack of serdes for tuple elements
     template<CSerdes ...TSerdes>
     struct Tuple
     {
         using ValueType = std::tuple<ValueT<TSerdes>...>;
 
-        /// Тип определяющий список седесов для элементов кортежа
+        /// Type defining the list of serdes for tuple elements
         using SerdesList = std::tuple<TSerdes...>;
 
         static consteval
@@ -48,7 +49,7 @@ namespace serdes
             return n;
         }
 
-        /// Количество элементов кортежа
+        /// Number of tuple elements
         [[nodiscard]] static consteval
         size_t GetSize() { return sizeof...(TSerdes); }
 
@@ -75,7 +76,6 @@ namespace serdes
             return valueSize;
         }
 
-
         template<COutputIterator TOutputIterator, CTupleLike TValue>
         requires (sizeof...(TSerdes) == std::tuple_size_v<TValue>)
         static constexpr
@@ -89,13 +89,13 @@ namespace serdes
             return bufpos;
         }
 
-        /// Версия функции сериализации для списока инициализации
-        /// Например SerializeTo({1, 2, 3});
+        /// Serialization overload for initializer lists
+        /// For example: SerializeTo({1, 2, 3});
         template<COutputIterator TOutputIterator, typename TValue>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const initializer_list<TValue> &value)
+        TOutputIterator SerializeTo(TOutputIterator bufpos, const std::initializer_list<TValue> &value)
         {
-            return SerializeTo(bufpos, std::tuple(value));
+            return SerializeTo(bufpos, std::tuple(value.begin(), value.end()));
         }
 
         template<COutputIterator TOutputIterator, typename... TValues>
@@ -129,7 +129,7 @@ namespace serdes
         }
     };
 
-} // serdes
+} // namespace serdes
 
 //------------------------------------------------------------------------------
 #endif

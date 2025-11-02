@@ -3,21 +3,19 @@
 //------------------------------------------------------------------------------
 /** @file
 
-    @brief  Сериализатор/десериализатор значений через указатель
+    @brief  Serializer/deserializer for values accessed through a pointer
 
     @details
-        Сериализация указателя выполняется с учетом значения nullptr.
+        Pointer serialization accounts for the nullptr value.
 
-        Выделение памяти при десериализации происходит с помощью вызываемой сущности Allocate.
-        которая задается в качестве третьего параметра шаблона седеса
-        По умолчанию Allocate пвыделяет память с помощью оператора new,
-        если переданный указатель равен nullptr, иначе память не выделяется.
-        При этом память должна быть выделена внешним кодом или интеллектуальным указателем
-        с автоматическим выделением памяти.
-        Можно задать другие значения для Allocate, например:
-        []<typename TPtr>(TPtr &ptr) { ptr = TPtr(new ValueT<TSerdes>); } // память выделяется всегда
-        []<typename TPtr>(TPtr &) {} // память не выделяется никогда
-        []<typename TPtr>(TPtr &ptr) { delete ptr; ptr = TPtr(new ValueT<TSerdes>); } //  память вначале освобождается, а затем выделяется
+        Memory allocation during deserialization is performed by a callable allocator object,
+        which can be customized when defining the serdes.
+        By default, the allocator uses the new operator only if the provided pointer is nullptr;
+        otherwise, it assumes memory has already been allocated externally.
+        Alternative allocation strategies can be supplied, for example:
+        - []<typename TPtr>(TPtr &ptr) { ptr = TPtr(new ValueT<TSerdes>); } — always allocates memory
+        - []<typename TPtr>(TPtr &) {} — never allocates memory
+        - []<typename TPtr>(TPtr &ptr) { delete ptr; ptr = TPtr(new ValueT<TSerdes>); } — deallocates first, then allocates
 
     @todo
 
@@ -26,6 +24,7 @@
 //------------------------------------------------------------------------------
 #include "Typeids.hpp"
 #include "Concepts.hpp"
+#include "Helpers.hpp"
 #include "Pod.hpp"
 
 using namespace std;
@@ -33,21 +32,39 @@ using namespace std;
 //------------------------------------------------------------------------------
 namespace serdes
 {
-    //--------------------------------------------------------------------------
-    /// Седес для укзателей
-    /// @tparam TSerdes - базовый седес для значений на которые указывает указатель
-    /// @tparam TPointer - тип указателя
-    /// @tparam Allocate - вызываемая сущность для выделения памяти (по умолчанию память выделяется, если указатель равен nullptr)
+    namespace details
+    {
+        template<CSerdes TSerdes>
+        struct DefaultAllocator
+        {
+            using ValueType = ValueT<TSerdes>;
+
+            template<CPointerLike<ValueType> TPtr>
+            constexpr
+            void operator()(TPtr &ptr) const
+            {
+                if (!ptr) ptr = TPtr(new ValueType);
+            }
+        };
+    }
+
+    /// Serdes for pointers
+    /// @tparam TSerdes Base serdes for the values pointed to
+    /// @tparam TPointer Pointer type
+    /// @tparam Allocator Callable entity for memory allocation (by default, allocates only if the pointer is nullptr)
     template<CSerdes TSerdes,
              CPointerLike<ValueT<TSerdes>> TPointer,
-             auto Allocate = []<typename TPtr>(TPtr &ptr) { if(!ptr) ptr = TPtr(new ValueT<TSerdes>); } >
+             typename Allocator = details::DefaultAllocator<TSerdes>>
     struct Pointer
     {
         using ValueType = TPointer;
 
-        using SerdesT = TSerdes;
+        using SerdesType = TSerdes;
 
         using SerdesList = std::tuple<Const<Pod<bool, PodTypeId::Bool>, false>, TSerdes>;
+
+        constexpr inline static
+        Allocator alloc{};
 
         static consteval
         SerdesTypeId GetSerdesTypeId() { return SerdesTypeId::Variant; }
@@ -56,22 +73,21 @@ namespace serdes
         BufferType GetBufferType() { return BufferType::Dynamic; }
 
         [[nodiscard]] static constexpr
-        uint32_t Sizeof() { return SerdesT::Sizeof() + 1; }
+        uint32_t Sizeof() { return SerdesType::Sizeof() + 1; }
 
-        // Для случая вызова PointerSerdes::Sizeof(nullptr);
         [[nodiscard]] static constexpr
         uint32_t Sizeof(std::nullptr_t) { return 1; }
 
-        template<CPointerLike<ValueT<SerdesT>> TPtr>
+        template<CPointerLike<ValueT<SerdesType>> TPtr>
         [[nodiscard]] static constexpr
         uint32_t Sizeof(const TPtr &ptr)
         {
             if(ptr)
-                return SerdesT::Sizeof(*ptr) + 1;
-            else return Sizeof(nullptr);
+                return SerdesType::Sizeof(*ptr) + 1;
+            else
+                return Sizeof(nullptr);
         }
 
-        // Для случая вызова PointerSerdes::SerializeTo(bufpos, nullptr);
         template<COutputIterator TOutputIterator>
         static constexpr
         TOutputIterator SerializeTo(TOutputIterator bufpos, std::nullptr_t)
@@ -79,30 +95,29 @@ namespace serdes
             return Pod<uint8_t>::SerializeTo(bufpos, 0);
         }
 
-        template<COutputIterator TOutputIterator, CPointerLike<ValueT<SerdesT>> TPtr>
+        template<COutputIterator TOutputIterator, CPointerLike<ValueT<SerdesType>> TPtr>
         static constexpr
         TOutputIterator SerializeTo(TOutputIterator bufpos, const TPtr &pvalue)
         {
-            if (pvalue) // проверка, что указатель не равен nullptr
+            if (pvalue)
             {
                 bufpos = Pod<uint8_t>::SerializeTo(bufpos, 1);
-                return SerdesT::SerializeTo(bufpos, *pvalue);
+                return SerdesType::SerializeTo(bufpos, *pvalue);
             }
             else
                 return SerializeTo(bufpos, nullptr);
         }
 
-        // Десериализация
-        template<CInputIterator TInputIterator, CPointerLike<ValueT<SerdesT>> TPtr>
+        template<CInputIterator TInputIterator, CPointerLike<ValueT<SerdesType>> TPtr>
         static constexpr
         TInputIterator DeserializeFrom(TInputIterator bufpos, TPtr &pvalue)
         {
             bool notNull;
             bufpos = Pod<uint8_t>::DeserializeFrom(bufpos, notNull);
-            if(notNull) // если сериализован не нулевой указатель
+            if(notNull) 
             {
-                Allocate(pvalue);
-                return SerdesT::DeserializeFrom(bufpos, *pvalue);
+                alloc(pvalue);
+                return SerdesType::DeserializeFrom(bufpos, *pvalue);
             }
             else
             {
@@ -112,7 +127,7 @@ namespace serdes
         }
     };
 
-} // serdes
+} // namespace serdes
 
 //------------------------------------------------------------------------------
 #endif

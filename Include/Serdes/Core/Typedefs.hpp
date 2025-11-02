@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 /** @file
 
-	@brief Определение седесов для стандартных типов данных
+	@brief Definition of serdes for standard data types
 
 	@details
 
@@ -22,15 +22,21 @@
 #include <list>
 #include <deque>
 #include <map>
+#include <unordered_map>
+#include <unordered_set>
 #include <set>
 #include <complex>
 #include <chrono>
 
 #include "Concepts.hpp"
+#include "Helpers.hpp"
 #include "Typeids.hpp"
 #include "Pod.hpp"
 #include "Const.hpp"
 #include "Range.hpp"
+#include "Sequence.hpp"
+#include "Assoc.hpp"
+#include "String.hpp"
 #include "Tuple.hpp"
 #include "Array.hpp"
 #include "Variant.hpp"
@@ -39,14 +45,13 @@
 #include "Struct.hpp"
 #include "Custom.hpp"
 
+
 //-----------------------------------------------------------------------------
 namespace serdes
 {
     //--------------------------------------------------------------------------
-    // Определение седесов на базе шаблона Pod и декларация необходимых требований
-
+    // Definition of serdes based on the Pod template and declaration of required constraints
     using Bool = Pod<bool, PodTypeId::Bool>;
-    using UChar8 = Pod<unsigned char, PodTypeId::Char8>;
     using Char8 = Pod<char, PodTypeId::Char8>;
     using Char16 = Pod<char16_t, PodTypeId::Char16>;
     using Char16B = Pod<char16_t, PodTypeId::Char16B>;
@@ -107,92 +112,127 @@ namespace serdes
     using Date = Pod<std::chrono::year_month_day, PodTypeId::Date>; // дата
     using DateB = Pod<std::chrono::year_month_day, PodTypeId::DateB>; //
 
-    // Седесы времени дня(без даты) с точностью до миллисекунд
-    using Time = Pod<std::chrono::duration<uint32_t, std::milli>, PodTypeId::Time>;
-    using TimeB = Pod<std::chrono::duration<uint32_t, std::milli>, PodTypeId::TimeB>;
+	// Serdes for time-of-day (without date) with millisecond precision
+	using Time = Pod<std::chrono::duration<uint32_t, std::milli>, PodTypeId::Time>;
+	using TimeB = Pod<std::chrono::duration<uint32_t, std::milli>, PodTypeId::TimeB>;
 
-    // Седесы даты и времени в формате Unix с точностью до наносекунд
-    using DateTime = Pod<std::chrono::nanoseconds, PodTypeId::DateTime>;
-    using DateTimeB = Pod<std::chrono::nanoseconds, PodTypeId::DateTimeB>;
+	// Serdes for Unix timestamps with nanosecond precision
+	using DateTime = Pod<std::chrono::nanoseconds, PodTypeId::DateTime>;
+	using DateTimeB = Pod<std::chrono::nanoseconds, PodTypeId::DateTimeB>;
 
-    //--------------------------------------------------------------------------
-	// Определения седесов для строковых типов
+	//------------------------------------------------------------------------------
+	// Definitions of serdes for string types
+	using String8 = BaseString<UInt8, Char8>;
+	using String16 = BaseString<UInt16, Char8>;
+	using String32 = BaseString<UInt32, Char8>;
+	using U16String = BaseString<UInt32, Char16>;
+	using U32String = BaseString<UInt32, Char32>;
 
-	using String8 = Range<UInt8, Char8, std::basic_string<ValueT<Char8>, std::char_traits<ValueT<Char8>>, std::allocator<ValueT<Char8>>>>;
-    using String16 = Range<UInt16, Char8, std::basic_string<ValueT<Char8>, std::char_traits<ValueT<Char8>>, std::allocator<ValueT<Char8>>>>;
-    using String32 = Range<UInt32, Char8, std::basic_string<ValueT<Char8>, std::char_traits<ValueT<Char8>>, std::allocator<ValueT<Char8>>>>;
-	using U16String8 = Range<UInt8, Char16, std::basic_string<ValueT<Char16>, std::char_traits<ValueT<Char16>>, std::allocator<ValueT<Char16>>>>;
-    using U16String16 = Range<UInt16, Char16, std::basic_string<ValueT<Char16>, std::char_traits<ValueT<Char16>>, std::allocator<ValueT<Char16>>>>;
-    using U16String32 = Range<UInt32, Char16, std::basic_string<ValueT<Char16>, std::char_traits<ValueT<Char16>>, std::allocator<ValueT<Char16>>>>;
-	using U32String8 = Range<UInt8, Char32, std::basic_string<ValueT<Char32>, std::char_traits<ValueT<Char32>>, std::allocator<ValueT<Char32>>>>;
-    using U32String16 = Range<UInt16, Char32, std::basic_string<ValueT<Char32>, std::char_traits<ValueT<Char32>>, std::allocator<ValueT<Char32>>>>;
-    using U32String32 = Range<UInt32, Char32, std::basic_string<ValueT<Char32>, std::char_traits<ValueT<Char32>>, std::allocator<ValueT<Char32>>>>;
+	// Serdes for string literals
+	template<ConstexprString str>
+	using ConstString = Const<Array<Char, str.size() + 1>, str>;
 
-    using String = String32;
-    using U16String = U16String32;
-	using U32String = U32String32;
+	using String = String32;
 
-    //--------------------------------------------------------------------------
-    // Определения седесов для стандартных контейнеров
+	//------------------------------------------------------------------------------
+	// Definitions of serdes for standard sequential containers
 
-    template<CSerdes TElementSerdes, typename TAllocator = std::allocator<ValueT<TElementSerdes>>>
-    using Vector8 = Range<UInt8, TElementSerdes, std::vector<ValueT<TElementSerdes>, TAllocator>>;
+	template<CSerdes TElementSerdes, typename TAllocator = std::allocator<ValueT<TElementSerdes>>>
+	using Vector8 = Sequence<UInt8, TElementSerdes, std::vector<ValueT<TElementSerdes>, TAllocator>>;
 
-    template<CSerdes TElementSerdes, typename TAllocator = std::allocator<ValueT<TElementSerdes>>>
-    using Vector16 = Range<UInt16, TElementSerdes, std::vector<ValueT<TElementSerdes>, TAllocator>>;
+	template<CSerdes TElementSerdes, typename TAllocator = std::allocator<ValueT<TElementSerdes>>>
+	using Vector16 = Sequence<UInt16, TElementSerdes, std::vector<ValueT<TElementSerdes>, TAllocator>>;
 
-    template<CSerdes TElementSerdes, typename TAllocator = std::allocator<ValueT<TElementSerdes>>>
-    using Vector32 = Range<UInt32, TElementSerdes, std::vector<ValueT<TElementSerdes>, TAllocator>>;
+	template<CSerdes TElementSerdes, typename TAllocator = std::allocator<ValueT<TElementSerdes>>>
+	using Vector32 = Sequence<UInt32, TElementSerdes, std::vector<ValueT<TElementSerdes>, TAllocator>>;
 
-    template<CSerdes TElementSerdes, typename TAllocator = std::allocator<ValueT<TElementSerdes>>>
-    using Vector = Vector32<TElementSerdes, TAllocator>;
+	template<CSerdes TElementSerdes, typename TAllocator = std::allocator<ValueT<TElementSerdes>>>
+	using Vector = Vector32<TElementSerdes, TAllocator>;
 
-    template<CSerdes TElementSerdes, typename TAllocator = std::allocator<ValueT<TElementSerdes>>>
-    using Deque = Range<UInt32, TElementSerdes, std::deque<ValueT<TElementSerdes>, TAllocator>>;
+	template<CSerdes TElementSerdes, typename TAllocator = std::allocator<ValueT<TElementSerdes>>>
+	using Deque = Sequence<UInt32, TElementSerdes, std::deque<ValueT<TElementSerdes>, TAllocator>>;
 
-    template<CSerdes TElementSerdes, typename TAllocator = std::allocator<ValueT<TElementSerdes>>>
-    using List = Range<UInt32, TElementSerdes, std::list<ValueT<TElementSerdes>, TAllocator>>;
+	template<CSerdes TElementSerdes, typename TAllocator = std::allocator<ValueT<TElementSerdes>>>
+	using List = Sequence<UInt32, TElementSerdes, std::list<ValueT<TElementSerdes>, TAllocator>>;
 
-    template<CSerdes TKeySerdes,
-             typename Compare = std::less<ValueT<TKeySerdes>>,
-             typename Allocator = std::allocator<ValueT<TKeySerdes>>>
-    using Set = Range<UInt32, TKeySerdes, std::set<ValueT<TKeySerdes>, Compare, Allocator>>;
+	//------------------------------------------------------------------------------
+	// Definitions of serdes for standard associative containers
+	template<CSerdes TKeySerdes,
+			 typename Compare = std::less<ValueT<TKeySerdes>>,
+			 typename Allocator = std::allocator<ValueT<TKeySerdes>>>
+	using Set = Assoc<UInt32, TKeySerdes, std::set<ValueT<TKeySerdes>, Compare, Allocator>>;
 
+	template<CSerdes TKeySerdes,
+			 typename Compare = std::less<ValueT<TKeySerdes>>,
+			 typename Allocator = std::allocator<ValueT<TKeySerdes>>>
+	using MultiSet = Assoc<UInt32, TKeySerdes, std::multiset<ValueT<TKeySerdes>, Compare, Allocator>>;
 
-    template<CSerdes TSerdes1, CSerdes TSerdes2>//
-    using Pair = Struct<std::pair<ValueT<TSerdes1>, ValueT<TSerdes2>>, Tuple<TSerdes1, TSerdes2>,
-                        &std::pair<ValueT<TSerdes1>, ValueT<TSerdes2>>::first, &std::pair<ValueT<TSerdes1>, ValueT<TSerdes2>>::second>;
+	template<CSerdes TSerdes1, CSerdes TSerdes2>
+	using Pair = Struct<std::pair<ValueT<TSerdes1>, ValueT<TSerdes2>>, Tuple<TSerdes1, TSerdes2>,
+			 &std::pair<ValueT<TSerdes1>, ValueT<TSerdes2>>::first, &std::pair<ValueT<TSerdes1>, ValueT<TSerdes2>>::second>;
 
-    template<CSerdes TKeySerdes,
-             CSerdes TValueSerdes,
-             typename Compare = std::less<ValueT<TKeySerdes>>,
-             typename Allocator = std::allocator<std::pair<const ValueT<TKeySerdes>, ValueT<TValueSerdes>>>>
-    using Map = Range<UInt32,
-                      Pair<TKeySerdes, TValueSerdes>,
-                      std::map<ValueT<TKeySerdes>, ValueT<TValueSerdes>, Compare, Allocator>>;
+	template<CSerdes TKeySerdes,
+			 CSerdes TValueSerdes,
+			 typename Compare = std::less<ValueT<TKeySerdes>>,
+			 typename Allocator = std::allocator<std::pair<const ValueT<TKeySerdes>, ValueT<TValueSerdes>>>>
+	using Map = Assoc<UInt32,
+			 Pair<TKeySerdes, TValueSerdes>,
+			 std::map<ValueT<TKeySerdes>, ValueT<TValueSerdes>, Compare, Allocator>>;
 
-    //--------------------------------------------------------------------------
-    // Седесы для указателей
+	template<CSerdes TKeySerdes,
+			 CSerdes TValueSerdes,
+			 typename Compare = std::less<ValueT<TKeySerdes>>,
+			 typename Allocator = std::allocator<std::pair<const ValueT<TKeySerdes>, ValueT<TValueSerdes>>>>
+	using MultiMap = Assoc<UInt32,
+			 Pair<TKeySerdes, TValueSerdes>,
+			 std::multimap<ValueT<TKeySerdes>, ValueT<TValueSerdes>, Compare, Allocator>>;
 
-    template<CSerdes TSerdes>
-    using Ptr = Pointer<TSerdes, ValueT<TSerdes> *>;
+	template<CSerdes TKeySerdes,
+			 typename THash = std::hash<ValueT<TKeySerdes>>,
+			 typename TKeyEqual = std::equal_to<ValueT<TKeySerdes>>,
+			 typename TAllocator = std::allocator<ValueT<TKeySerdes>>>
+	using UnorderedSet = Assoc<UInt32, TKeySerdes,
+			 std::unordered_set<ValueT<TKeySerdes>, THash, TKeyEqual, TAllocator>>;
 
-    template<CSerdes TSerdes>
-    using UniquePtr = Pointer<TSerdes, std::unique_ptr<ValueT<TSerdes>>>;
+	template<CSerdes TKeySerdes,
+			 typename THash = std::hash<ValueT<TKeySerdes>>,
+			 typename TKeyEqual = std::equal_to<ValueT<TKeySerdes>>,
+			 typename TAllocator = std::allocator<ValueT<TKeySerdes>>>
+	using UnorderedMultiSet = Assoc<UInt32, TKeySerdes,
+			 std::unordered_multiset<ValueT<TKeySerdes>, THash, TKeyEqual, TAllocator>>;
 
-    template<CSerdes TSerdes>
-    using SharedPtr = Pointer<TSerdes, shared_ptr<ValueT<TSerdes>>>;
+	template<CSerdes TKeySerdes,
+			 CSerdes TValueSerdes,
+			 typename THash = std::hash<ValueT<TKeySerdes>>,
+			 typename TKeyEqual = std::equal_to<ValueT<TKeySerdes>>,
+			 typename TAllocator = std::allocator<std::pair<const ValueT<TKeySerdes>, ValueT<TValueSerdes>>>>
+	using UnorderedMap = Assoc<UInt32,
+			 Pair<TKeySerdes, TValueSerdes>,
+			 std::unordered_map<ValueT<TKeySerdes>, ValueT<TValueSerdes>, THash, TKeyEqual, TAllocator>>;
 
-    //--------------------------------------------------------------------------
-    // Седес для строковых констант
-    template<ConstexprString str>
-    using ConstString = Const<Array<Char, str.size()+1>, str>;
+	template<CSerdes TKeySerdes,
+			 CSerdes TValueSerdes,
+			 typename THash = std::hash<ValueT<TKeySerdes>>,
+			 typename TKeyEqual = std::equal_to<ValueT<TKeySerdes>>,
+			 typename TAllocator = std::allocator<std::pair<const ValueT<TKeySerdes>, ValueT<TValueSerdes>>>>
+	using UnorderedMultiMap = Assoc<UInt32,
+			 Pair<TKeySerdes, TValueSerdes>,
+			 std::unordered_multimap<ValueT<TKeySerdes>, ValueT<TValueSerdes>, THash, TKeyEqual, TAllocator>>;
 
-    //--------------------------------------------------------------------------
-    // Седес для байтового массива, размер которого можно получить
-    // с помощью функции-члена size() во время компиляции
-    template<auto ArrayObject>
-    using ByteArray = Array<UInt8, ArrayObject.size()>;
+	//------------------------------------------------------------------------------
+	// Serdes for pointers
+
+	template<CSerdes TSerdes>
+	using Ptr = Pointer<TSerdes, ValueT<TSerdes>*>;
+
+	template<CSerdes TSerdes>
+	using Ref = Reference<TSerdes, ValueT<TSerdes>*>;
+
+	template<CSerdes TSerdes>
+	using UniquePtr = Pointer<TSerdes, std::unique_ptr<ValueT<TSerdes>>>;
+
+	template<CSerdes TSerdes>
+	using SharedPtr = Pointer<TSerdes, std::shared_ptr<ValueT<TSerdes>>>;
 
 }
 

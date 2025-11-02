@@ -3,10 +3,9 @@
 //------------------------------------------------------------------------------
 /** @file
 
-    @brief Шаблон седесов для массивов фиксированной длины
+    @brief Serdes template for fixed-size arrays
 
-    @details В отличие от седеса Range, Array может сериализовывать диапазоны
-        с одноразовыми (single-pass) итераторами
+    @details 
 
     @todo
 
@@ -18,25 +17,28 @@
 #include <array>
 #include "Math.hpp"
 #include "Concepts.hpp"
+#include "Helpers.hpp"
+#include "Exception.hpp"
+
 //------------------------------------------------------------------------------
 namespace serdes
 {
-    //--------------------------------------------------------------------------
-    /// @tparam TElementType Седес-тип элементов контейнера
-    /// @tparam elementCount Количество сериализуемых элементов
+
+    /// @tparam TElementSerdes Serdes type for container elements
+    /// @tparam elementCount Number of elements to serialize
     template<
         CSerdes TElementSerdes,
         uint32_t elementCount>
     struct Array
     {
-        /// Количество сериализуемых элементов
+        /// Number of elements to serialize
         constexpr static
         uint32_t arraySize = elementCount;
 
-        /// Седес для сериализации/десериализации элементов контейнера
+        /// Serdes used to serialize/deserialize container elements
         using ElementSerdes = TElementSerdes;
 
-        /// Тип элементов контейнера
+       /// Base type of container elements
         using ElementBaseType = ValueT<ElementSerdes>;
 
         using ValueType = std::array<ElementBaseType, arraySize>;
@@ -53,20 +55,20 @@ namespace serdes
             return utils::Safe<utils::policy::MaxValue>::Mul(ElementSerdes::Sizeof(), static_cast<uint32_t>(arraySize));
         }
 
-        /// @return Размер или WRONG_SIZE, если при вычислении результата произошло
-        /// переполнение разрядной сетки или  длина диапазона меньше arraySize
+        /// @return Size or WRONG_SIZE if an overflow occurred during computation
+        /// or if the range size is less than arraySize
         template<std::ranges::forward_range TRange>
         [[nodiscard]] static constexpr
         uint32_t Sizeof(const TRange &range)
         {
-            // Размер сериализуемого диапазона должен быть не меньше arraySize
+            // The size of the range to serialize must be at least arraySize
             if(std::ranges::size(range) < arraySize)
                 return WRONG_SIZE;
 
-            // Если седес элементов контейнера использует статический буфер
+            // If the element serdes uses a static buffer
             if constexpr (ElementSerdes::GetBufferType() == BufferType::Static)
                 return Sizeof();
-            else // Cедес элементов контейнера использует динамический буфер
+            else // the element serdes uses a dynamic buffer
             {
                 uint32_t bufSize = 0;
                 auto element = std::ranges::begin(range);
@@ -82,10 +84,10 @@ namespace serdes
         [[nodiscard]] static constexpr
         uint32_t Sizeof(const TValues &...values)
         {
-            // Если седес элементов контейнера использует статический буфер
+            // If the element serdes uses a static buffer
             if constexpr (ElementSerdes::GetBufferType() == BufferType::Static)
                 return Sizeof();
-            else // Cедес элементов контейнера использует динамический буфер
+            else // the element serdes uses a dynamic buffer
             {
                 uint32_t bufSize = 0;
                 ((bufSize = utils::Safe<utils::policy::Exception>::Add(bufSize, ElementSerdes::Sizeof(values))), ...) ;
@@ -93,23 +95,25 @@ namespace serdes
             }
         }
 
-        /// @note Функция не проверяет выход за границы буфера и размер контейнера/диапазона. Для этого
-        /// необходимо использовать функцию Array::Sizeof(const TRange &range)
-        /// @note Размер контейнера/диапазона может быть больше arraySize, но будут сериализованы только первые arraySize элементов.
+        /// @note This function does not check for buffer overruns or container/range size.
+        /// Use Array::Sizeof(const TRange &range) for such validation.
+        /// @note The container/range size may exceed arraySize, but only the first arraySize elements will be serialized.
         template<COutputIterator TOutputIterator, std::ranges::range TRange>
         static constexpr
         auto SerializeTo(TOutputIterator bufpos, const TRange &range)
         {
             auto element = std::ranges::begin(range);
             uint32_t i;
-            for(i = 0; i < arraySize && element != std::ranges::end(range); i++) // сериализация элементов диапазона
+            for(i = 0; i < arraySize && element != std::ranges::end(range); i++)
                 bufpos = ElementSerdes::SerializeTo(bufpos, *element++);
-            if(i == arraySize) // если сериализовано количество элементов равное размеру массива
+            if(i == arraySize)
                 return bufpos;
-            else throw 1;
+            else 
+                utils::Throw<std::length_error>(std::format("input range shorter than expected array size (expected {}, got {})", arraySize, i));
         }
 
-        template<COutputIterator TOutputIterator, typename ...TValues>
+        /// Serialization of elements provided as a parameter pack
+		template<COutputIterator TOutputIterator, typename ...TValues>
         requires (sizeof...(TValues) == arraySize)
         static constexpr
         auto SerializeTo(TOutputIterator bufpos, const TValues &...values)
@@ -118,14 +122,16 @@ namespace serdes
             return bufpos;
         }
 
-        template<COutputIterator TOutputIterator, typename TValue>
+        /// Serialization of elements provided as an initializer list
+		template<COutputIterator TOutputIterator, typename TValue>
         static constexpr
         auto SerializeTo(TOutputIterator bufpos, const std::initializer_list<TValue> &value)
         {
             return SerializeTo(bufpos, std::ranges::subrange(value.begin(), value.end()));
         }
 
-        template<CInputIterator TInputIterator, std::ranges::forward_range TRange>
+        /// Deserialization into a given range
+		template<CInputIterator TInputIterator, std::ranges::forward_range TRange>
         static constexpr
         auto DeserializeFrom(TInputIterator bufpos, TRange &range)
         {
@@ -137,7 +143,8 @@ namespace serdes
             return bufpos;
         }
 
-        template<CInputIterator TInputIterator, typename ...TValues>
+        /// Deserialization of elements provided as a parameter pack
+		template<CInputIterator TInputIterator, typename ...TValues>
         requires (sizeof...(TValues) == arraySize)
         static constexpr
         auto DeserializeFrom(TInputIterator bufpos, TValues &...values)
@@ -146,10 +153,8 @@ namespace serdes
             return bufpos;
         }
     };
-    //----------------------------------------------------------------------
 
 } // serdes
 
 //------------------------------------------------------------------------------
 #endif
-

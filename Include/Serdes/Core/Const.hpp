@@ -3,14 +3,14 @@
 //------------------------------------------------------------------------------
 /** @file
 
-    @brief  Шаблон седеса для констант и вспомагательные шаблоны
+    @brief  Serdes template for constants
 
     @details
-           Седес не выполняет никакой фактической сериализации/десериализации
-           и служит в качестве заглушки в составных седесах для "передачи" константных значений.
-           ValueT<Const> уникален для каждой константы. Для этого каждая числовая константа
-           "заворачивается" в специальный вспомагательный шаблон Constant или
-           ConstexprString(для строковых литералов).
+           This serdes performs no actual serialization/deserialization
+           and serves as a placeholder in composite serdes to "pass through" constant values.
+          
+           ValueT<Const> is unique for each constant. To achieve this, each numeric constant is wrapped 
+		   in a special helper template called Constant, or ConstexprString (for string literals).
 
     @todo
 
@@ -21,8 +21,10 @@
 #include <variant>
 #include <algorithm>
 #include "Concepts.hpp"
+#include "Helpers.hpp"
 #include "Typeids.hpp"
 #include "Pod.hpp"
+
 
 using namespace std;
 
@@ -30,22 +32,22 @@ using namespace std;
 namespace serdes
 {
     //--------------------------------------------------------------------------
-    /// Вспомагательный шаблон, который позволяет работать с константами как с типами,
-    /// в частности, позволяет определять ValueType в седесе Const
+    /// Helper template that allows treating constants as types,
+    /// particularly enabling the definition of ValueType in the Const serdes.
     template<auto v>
     struct Constant
     {
-        /// Базовый тип константы
+        /// Base type of the constant
         using Type = decltype(v);
 
-        /// Значение константы
+        /// Constant value
         static constexpr inline Type Value = v;
 
-        /// Константа может быть определенв как объект, а не только использоваться как тип
+        /// The constant can be instantiated as an object, not just used as a typeп
         constexpr inline
         Constant() {}
 
-        /// Любые копирования и присваивания допустимы, но не изменяют константу
+        /// Any copy or assignment is allowed but does not modify the constant
         template<typename T>
         constexpr inline
         Constant(const T &){}
@@ -54,7 +56,7 @@ namespace serdes
         [[nodiscard]] constexpr inline
         Constant operator=(const T &){ return Constant(); }
 
-        /// Приведение к базовому типу для возможности использования в выражениях
+        /// Conversion to the base type for use in expressions
         [[nodiscard]] constexpr inline
         operator Type() { return Value; }
 
@@ -62,52 +64,48 @@ namespace serdes
         operator const Type()const { return Value; }
     };
 
-    //--------------------------------------------------------------------------
-    /// Вспомагательный шаблон,позволяющий использовать строковые литералы как параметры-значения
-    /// шаблонов, что позволяет определять седесы Const для строковых констант
+    /// Helper template enabling string literals to be used as non-type template parameters,
+    /// which allows defining Const serdes for string constants.
     template <typename TChar, std::size_t N>
     struct ConstexprString
     {
         using CharT = TChar;
 
-        std::array<TChar, N> _data;
+        std::array<CharT, N> _data;
 
         constexpr inline
         ConstexprString(const TChar (&str)[N]) {  std::copy_n(str, N, _data.begin()); }
 
-        // Перегрузка оператора == является одним из требований к типам,
-        // которые могут использоваться в качестве параметров-значений в шаблонах
+		// Overload of operator== is required for types used as non-type template parameters
         constexpr inline
         bool operator==(const ConstexprString&) const = default;
 
-        // Оператор приведения к типу std::string_view
+        // Conversion operator to std::string_view
         constexpr inline
-        operator std::string_view() const {  return std::string_view(_data.begin()); }
+        operator std::string_view() const { return std::string_view(_data.data()); }
 
-        // Оператор приведения к типу std::array
+        // Conversion operator to std::array
         constexpr inline
-        operator std::array<TChar, N>()const {  return _data; }
+        operator std::array<CharT, N>()const {  return _data; }
 
-        // Размер строки без завершающего '\0'
+        // String length excluding the terminating '\0'
         constexpr inline
         std::size_t size() const { return N - 1; }
 
         constexpr
-        const TChar* c_str() const { return _data.begin(); }
+        const CharT* c_str() const { return _data.begin(); }
 
-        // Методы для поддержки концепции std::ranges::forward_range
+        // Methods to satisfy std::ranges::forward_range concept
         constexpr
-        const TChar* begin() const { return _data.begin(); }
+        const CharT* begin() const { return _data.begin(); }
 
         constexpr
-        const TChar* end() const { return _data + size(); }
+        const CharT* end() const { return _data + size(); }
     };
 
-
-    //--------------------------------------------------------------------------
-    /// Шаблон седесов для констант
-    /// @tparam TSerdes - базовый седес для константы
-    /// @tparam Value - константное значение
+    /// Serdes template for constants
+    /// @tparam TSerdes - base serdes for the constant
+    /// @tparam Value - constant value
     template<CSerdes TSerdes, ValueT<TSerdes> Value>
     struct Const
     {
