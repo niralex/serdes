@@ -11,6 +11,7 @@ C++ serialization/deserialization library.
 - Optimized for speed and space;
 - Cross-platform compatibility (the format of serialized data is strictly specified);
 - Built-in support for standard data types, including STL containers, pointers and tuples;
+- Automatic selection of serializers for standard types;
 - Provides mechanisms to define serializers/deserializers for custom types;
 - Support for constexpr serialization, deserialization;
 - Support for different byte order(endianess);
@@ -21,7 +22,7 @@ C++ serialization/deserialization library.
 
 ---
 
-## Usage example 1 (Hello World)
+## Usage example 1 (simplest usage with automatic selection of serializer types)
 
 ```cpp
 #include <cassert>
@@ -29,23 +30,23 @@ C++ serialization/deserialization library.
 
 int main()
 {
+    // All library types and functions are in the "serdes" namespace.
     using namespace serdes;
 
     // Test data
     std::string_view str("Hello World!");
-    unsigned         num = 2025;
+    unsigned num = 2025;
 
-    // Serializer-deserializer type definition
-    using MySerdes = Tuple<String8, UInt64>;
-
-    // Creating a buffer
-    char buffer[Sizeof<MySerdes>()];
+    // Creating a buffer: 12 + 8 = 20 bytes (for a 64-bit unsigned)
+    char buffer[Sizeof(str, num)]; 
 
     // Serialization
-    SerializeTo<MySerdes>(buffer, str, num); // 264 byte
+    SerializeTo(buffer, str, num);
 
     // Deserialization
-    auto [_str, _num] = DeserializeFrom<MySerdes>(buffer);
+    std::string _str("Hello World!");
+    unsigned _num;
+    DeserializeFrom(buffer, _str, _num);
 
     // Check
     assert(_str == str);
@@ -57,7 +58,42 @@ int main()
 
 ---
 
-## Usage example 2 (constexpr Serialization/Deserialization)
+## Usage example 2 (typed cross-platform serialization and deserialization)
+
+```cpp
+#include <cassert>
+#include <Serdes/Serdes.hpp>
+
+int main()
+{
+    using namespace serdes;
+
+    // Test data
+    int i = 2024;
+    float f = 3.14;
+    std::vector<std::string> words{"fast ", "cross-platform ", "data exchange ", "tool"};
+
+    // Declaring a serializer/deserializer type
+    using CrossPlatformSerdes = Tuple<Int64, Float, Vector8<String>>;
+
+    // Serialization
+    auto buffer = Serialize<CrossPlatformSerdes>(i, f, words);
+
+    // Deserialization
+    auto [_i, _f, _words] = DeserializeFrom<CrossPlatformSerdes>(buffer.begin());
+
+    // Check
+    assert(_i == i);
+    assert(_f == f);
+    assert(_words == words);
+
+    return 0;
+}
+```
+
+---
+
+## Usage example 3 (constexpr Serialization/Deserialization)
 
 ```cpp
 #include <cassert>
@@ -89,7 +125,7 @@ int main()
     return 0;
 }
 ```
-## Usage example 3 (JSON serialization/deserialization)
+## Usage example 4 (JSON serialization/deserialization)
 For a full usage example, see [Demo/JsonArray/main.cpp](./Demo/JsonArray/main.cpp).
 
 ## Installation and Usage

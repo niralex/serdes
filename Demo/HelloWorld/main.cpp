@@ -1,13 +1,7 @@
 //------------------------------------------------------------------------------
 /** @file
 
-    @brief The simplest example of serialization-deserialization values of standard types.
-    A use case in which a buffer of the required size is automatically created.
-
-    @details
-
-    @todo
-
+    @brief Simplest usage with automatic selection of serializer types.
 
     @author Niralex
 */
@@ -20,23 +14,23 @@
 //------------------------------------------------------------------------------
 int main()
 {
+    // All library types and functions are in the "serdes" namespace.
     using namespace serdes;
 
     // Test data
     std::string_view str("Hello World!");
     unsigned num = 2025;
 
-    // Serializer-deserializer type definition
-    using MySerdes = Tuple<String8, UInt64>;
-
     // Creating a buffer
-    char buffer[Sizeof<MySerdes>()];
+    char buffer[Sizeof(str, num)]; // 12 + 8 = 20 bytes (for a 64-bit unsigned)
 
     // Serialization
-    SerializeTo<MySerdes>(buffer, str, num); // 264 byte
+    SerializeTo(buffer, str, num);
 
     // Deserialization
-    auto [_str, _num] = DeserializeFrom<MySerdes>(buffer);
+    std::string _str("Hello World!");
+    unsigned _num;
+    DeserializeFrom(buffer, _str, _num);
 
     // Check
     assert(_str == str);
