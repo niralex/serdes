@@ -38,7 +38,7 @@ namespace serdes
         using BaseSerdes = TSerdes;
 
         static consteval
-        SerdesTypeId GetSerdesTypeId() { return BaseSerdes::GetSerdesTypeId(); }
+        TypeId GetTypeId() { return BaseSerdes::GetTypeId(); }
 
         static consteval
         BufferType GetBufferType() { return BaseSerdes::GetBufferType(); }

@@ -33,7 +33,7 @@ namespace serdes
         using SerdesList = std::tuple<TSerdes...>;
 
         static consteval
-        SerdesTypeId GetSerdesTypeId() { return SerdesTypeId::Tuple; }
+        TypeId GetTypeId() { return TypeId::Tuple; }
 
         static consteval
         BufferType GetBufferType()

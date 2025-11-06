@@ -15,8 +15,8 @@
            memory is allocated using the provided allocator (just like in Pointer).
            Otherwise, no allocation occurs, and the object is deserialized in-place.
 
-        2) Pointer always has SerdesTypeId::Variant, whereas Reference inherits the base serdes type:
-           Reference::GetSerdesTypeId() == Reference::SerdesType::GetSerdesTypeId()
+        2) Pointer always has TypeId::Variant, whereas Reference inherits the base serdes type:
+           Reference::GetTypeId() == Reference::SerdesType::GetTypeId()
 
         3) Pointer always uses a dynamic buffer, while Reference inherits the buffer type from the base serdes:
            Reference::GetBufferType() == Reference::SerdesType::GetBufferType()
@@ -53,7 +53,7 @@ namespace serdes
         Allocator alloc{};
 
         static consteval
-        SerdesTypeId GetSerdesTypeId() { return SerdesType::GetSerdesTypeId(); }
+        TypeId GetTypeId() { return SerdesType::GetTypeId(); }
 
         [[nodiscard]] static consteval
         BufferType GetBufferType() { return SerdesType::GetBufferType(); }

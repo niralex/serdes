@@ -5,7 +5,7 @@
 
     @brief Serdes template for fixed-size arrays
 
-    @details 
+    @details
 
     @todo
 
@@ -44,7 +44,7 @@ namespace serdes
         using ValueType = std::array<ElementBaseType, arraySize>;
 
         static consteval
-        SerdesTypeId GetSerdesTypeId() { return SerdesTypeId::Array; }
+        TypeId GetTypeId() { return TypeId::Array; }
 
         static consteval
         BufferType GetBufferType() { return ElementSerdes::GetBufferType(); }
@@ -108,7 +108,7 @@ namespace serdes
                 bufpos = ElementSerdes::SerializeTo(bufpos, *element++);
             if(i == arraySize)
                 return bufpos;
-            else 
+            else
                 utils::Throw<std::length_error>(std::format("input range shorter than expected array size (expected {}, got {})", arraySize, i));
         }
 

@@ -32,18 +32,18 @@ namespace serdes
         using ValueType = TValueType;
 
         static consteval
-        SerdesTypeId GetSerdesTypeId() { return SerdesTypeId::Pod; }
+        TypeId GetTypeId() { return TypeId::Pod; }
+
+        static consteval
+        PodTypeId GetPodId() { return typeId; }
 
         static consteval
         BufferType GetBufferType() { return BufferType::Static; }
 
         static consteval
-        PodTypeId GetTypeId() { return typeId; }
-
-        static consteval
         std::endian GetEndianness()
         {
-            return static_cast<uint8_t>(GetTypeId()) & 1 ? std::endian::big : std::endian::little;
+            return static_cast<uint8_t>(GetPodId()) & 1 ? std::endian::big : std::endian::little;
         }
 
         [[nodiscard]] static constexpr
@@ -66,7 +66,7 @@ namespace serdes
                 for(auto it = bytes.begin(); it != bytes.end(); it++)
                     *bufpos++ = static_cast<TBuffer>(*it);
 
-            else 
+            else
                 for(auto it = bytes.rbegin(); it != bytes.rend(); it++)
                     *bufpos++ = static_cast<TBuffer>(*it);
 
@@ -77,14 +77,14 @@ namespace serdes
         static constexpr
         TInputIterator DeserializeFrom(TInputIterator bufpos, TValue &value)
         {
-            std::array<uint8_t, Sizeof()> bytes; 
+            std::array<uint8_t, Sizeof()> bytes;
 
             if constexpr (GetEndianness() == std::endian::native)
-                for(auto it = bytes.begin(); it != bytes.end(); it++) 
+                for(auto it = bytes.begin(); it != bytes.end(); it++)
                     *it = static_cast<uint8_t>(*bufpos++);
 
-            else 
-                for(auto it = bytes.rbegin(); it != bytes.rend(); it++) 
+            else
+                for(auto it = bytes.rbegin(); it != bytes.rend(); it++)
                     *it = static_cast<uint8_t>(*bufpos++);
 
             value = static_cast<TValue>(std::bit_cast<ValueType>(bytes));

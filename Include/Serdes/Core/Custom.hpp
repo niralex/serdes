@@ -5,7 +5,7 @@
 
     @brief Templates for defining custom serdes
 
-    @details 
+    @details
 		The Custom template is not a standalone serdes type; it only allows defining
         an alias of another serdes for a user-defined type.
         The serdes on which the Custom serdes is based is called the base serdes (Custom::BaseSerdes).
@@ -55,7 +55,7 @@ namespace serdes
         using BaseValueType = ValueT<BaseSerdes>;
 
         static consteval
-        SerdesTypeId GetSerdesTypeId() { return BaseSerdes::GetSerdesTypeId(); }
+        TypeId GetTypeId() { return BaseSerdes::GetTypeId(); }
 
         static consteval
         BufferType GetBufferType() { return BaseSerdes::GetBufferType(); }

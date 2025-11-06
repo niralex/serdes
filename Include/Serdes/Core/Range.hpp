@@ -53,7 +53,7 @@ namespace serdes
         static constexpr uint8_t sizelen = sizeof(ValueT<TSizeSerdes>);
 
         static consteval
-        SerdesTypeId GetSerdesTypeId() { return SerdesTypeId::Range; }
+        TypeId GetTypeId() { return TypeId::Range; }
 
         [[nodiscard]] static consteval
         BufferType GetBufferType() { return BufferType::Dynamic; }
@@ -65,7 +65,7 @@ namespace serdes
                     static_cast<uint32_t>(sizelen),
                     utils::Safe<utils::policy::MaxValue>::Mul(
                         ElementSerdes::Sizeof(),
-                        static_cast<uint32_t>(std::numeric_limits<ValueT<TSizeSerdes>>::max()))); 
+                        static_cast<uint32_t>(std::numeric_limits<ValueT<TSizeSerdes>>::max())));
         }
 
         /// @note This function may return WRONG_SIZE if an overflow occurs during computation

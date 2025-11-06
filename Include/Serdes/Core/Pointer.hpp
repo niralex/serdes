@@ -67,7 +67,7 @@ namespace serdes
         Allocator alloc{};
 
         static consteval
-        SerdesTypeId GetSerdesTypeId() { return SerdesTypeId::Variant; }
+        TypeId GetTypeId() { return TypeId::Variant; }
 
         [[nodiscard]] static consteval
         BufferType GetBufferType() { return BufferType::Dynamic; }
@@ -114,7 +114,7 @@ namespace serdes
         {
             bool notNull;
             bufpos = Pod<uint8_t>::DeserializeFrom(bufpos, notNull);
-            if(notNull) 
+            if(notNull)
             {
                 alloc(pvalue);
                 return SerdesType::DeserializeFrom(bufpos, *pvalue);

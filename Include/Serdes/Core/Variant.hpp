@@ -51,7 +51,7 @@ namespace serdes
         using MatchSerdes = std::tuple_element_t<GetIndex<T>(), SerdesList>;
 
         static consteval
-        SerdesTypeId GetSerdesTypeId() { return SerdesTypeId::Variant; }
+        TypeId GetTypeId() { return TypeId::Variant; }
 
         static consteval
         BufferType GetBufferType()

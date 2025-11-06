@@ -8,8 +8,8 @@
     @details
            This serdes performs no actual serialization/deserialization
            and serves as a placeholder in composite serdes to "pass through" constant values.
-          
-           ValueT<Const> is unique for each constant. To achieve this, each numeric constant is wrapped 
+
+           ValueT<Const> is unique for each constant. To achieve this, each numeric constant is wrapped
 		   in a special helper template called Constant, or ConstexprString (for string literals).
 
     @todo
@@ -114,7 +114,7 @@ namespace serdes
         using SerdesType = TSerdes;
 
         static consteval
-        SerdesTypeId GetSerdesTypeId() { return SerdesTypeId::Const; }
+        TypeId GetTypeId() { return TypeId::Const; }
 
         [[nodiscard]] static consteval
         BufferType GetBufferType() { return BufferType::Static; }

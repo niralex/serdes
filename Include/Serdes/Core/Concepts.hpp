@@ -31,7 +31,7 @@ namespace serdes
         typename TSerdes::ValueType;
 
         /// Requirement: presence of a function to obtain the serdes type identifier
-        { TSerdes::GetSerdesTypeId() } -> std::same_as<SerdesTypeId>;
+        { TSerdes::GetTypeId() } -> std::same_as<TypeId>;
 
         /// Requirement: functions to determine the serialized size of values must exist
         { TSerdes::Sizeof() } -> std::same_as<uint32_t>;       // maximum possible size
