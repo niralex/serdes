@@ -47,6 +47,10 @@ namespace serdes
     template<>
     struct Default<> { using Type = SerdesT<>; };
 
+    // Specialization for type void
+    template<>
+    struct Default<void> { using Type = Void; };
+
     /// Concept for integral types with specified properties
     template<typename T, std::size_t Size, bool isSigned>
     concept CIntegral =

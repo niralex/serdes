@@ -15,15 +15,15 @@
 */
 //------------------------------------------------------------------------------
 #include <cstdint>
+#include <limits>
 
 //------------------------------------------------------------------------------
 namespace serdes
 {
     /// Enumeration of serdes types
-    enum class SerdesTypeId : uint8_t
+    enum class TypeId : uint8_t
     {
-        // special value (used to delimit descriptor lists)
-        Null,
+		Void,
         Pod,
         Range,
         Array,
