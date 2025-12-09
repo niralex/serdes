@@ -1,0 +1,41 @@
+# Meson build directories
+builddir/
+build/
+
+# Meson subprojects (keep .wrap files and lock, ignore downloaded sources)
+subprojects/*/
+subprojects/packagecache/
+!subprojects/*.wrap
+!subprojects/.wraplock
+
+# Compiled binaries
+*.exe
+*.out
+*.app
+
+# Compiled object files
+*.o
+*.obj
+*.lo
+*.slo
+
+# Compiled libraries
+*.so
+*.so.*
+*.dylib
+*.dll
+*.a
+*.lib
+*.lai
+*.la
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Compile commands
+compile_commands.json
