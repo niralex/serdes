@@ -1,7 +1,7 @@
 project('serdes', 'cpp',
   version: '1.0.0',
   default_options: [
-    'cpp_std=c++20',
+    'cpp_std=c++23',
     'warning_level=3',
   ]
 )

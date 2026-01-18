@@ -6,10 +6,11 @@ C++ serialization/deserialization library.
 
 ## Key Features
 
-- C++20 header-only;
+
+- C++23 header-only;
 - No external dependencies, no macros, no source code generation;
+- Binary cross-platform structured format;
 - Optimized for speed and space;
-- Cross-platform compatibility (the format of serialized data is strictly specified);
 - Built-in support for standard data types, including STL containers, pointers and tuples;
 - Automatic selection of serializers for standard types;
 - Provides mechanisms to define serializers/deserializers for custom types;
@@ -18,6 +19,7 @@ C++ serialization/deserialization library.
 - Includes tools to determine buffer size before serialization;
 - Supports using arrays, standard containers, files, sockets, and more as buffers;
 - Serializers and deserializers are represented by types rather than data;
+- Support for dynamic serialization/deserialization using serdes descriptors (without compile-time type knowledge)
 - Supports GCC, MinGW, and Clang compilers;
 
 ---
@@ -26,8 +28,10 @@ C++ serialization/deserialization library.
 
 ```cpp
 #include <cassert>
+#include <iostream>
 #include <Serdes/Serdes.hpp>
 
+//------------------------------------------------------------------------------
 int main()
 {
     // All library types and functions are in the "serdes" namespace.
@@ -37,16 +41,16 @@ int main()
     std::string_view str("Hello World!");
     unsigned num = 2025;
 
-    // Creating a buffer: 12 + 8 = 20 bytes (for a 64-bit unsigned)
-    char buffer[Sizeof(str, num)]; 
+    // Creating a buffer
+    char buffer[Sizeof(str, num)]; // 12 + 8 = 20 bytes (for a 64-bit unsigned)
 
     // Serialization
-    SerializeTo(buffer, str, num);
+    Serialize(buffer, str, num);
 
     // Deserialization
     std::string _str("Hello World!");
     unsigned _num;
-    DeserializeFrom(buffer, _str, _num);
+    Deserialize(buffer, _str, _num);
 
     // Check
     assert(_str == str);
@@ -64,6 +68,7 @@ int main()
 #include <cassert>
 #include <Serdes/Serdes.hpp>
 
+//------------------------------------------------------------------------------
 int main()
 {
     using namespace serdes;
@@ -77,10 +82,10 @@ int main()
     using CrossPlatformSerdes = Tuple<Int64, Float, Vector8<String>>;
 
     // Serialization
-    auto buffer = Serialize<CrossPlatformSerdes>(i, f, words);
+    auto buffer = SerializeToVector<CrossPlatformSerdes>(i, f, words);
 
     // Deserialization
-    auto [_i, _f, _words] = DeserializeFrom<CrossPlatformSerdes>(buffer.begin());
+    auto [_i, _f, _words] = Deserialize<CrossPlatformSerdes>(buffer.begin());
 
     // Check
     assert(_i == i);
@@ -100,10 +105,11 @@ int main()
 #include <array>
 #include <Serdes/Serdes.hpp>
 
+//------------------------------------------------------------------------------
 int main()
 {
-	using namespace serdes;
-	
+    using namespace serdes;
+
     //Serializer-Deserializer type declaration
     using MySerdes = Array<UInt64, 3>;
 
@@ -111,13 +117,13 @@ int main()
     constexpr ValueT<MySerdes> data{112345678, 99999999, 123123123123}; //
 
     // constexpr serialization
-    constexpr auto buffer = Serialize<MySerdes>(data);
+    constexpr auto buffer = SerializeToArray<MySerdes>(data);
 
     static_assert(std::ranges::range<decltype(buffer)>);
     static_assert(buffer.size() == Sizeof<MySerdes>());
 
     // constexpr deserialization
-    constexpr auto _data = DeserializeFrom<MySerdes>(buffer.begin());
+    constexpr auto _data = Deserialize<MySerdes>(buffer.begin());
 
     // check
     static_assert(_data == data);
@@ -127,6 +133,9 @@ int main()
 ```
 ## Usage example 4 (JSON serialization/deserialization)
 For a full usage example, see [Demo/JsonArray/main.cpp](./Demo/JsonArray/main.cpp).
+
+## Usage example 5 (Runtime descriptor inspection)
+For a full usage example, see [Demo/Descriptor/main.cpp](./Demo/Descriptor/main.cpp).
 
 ## Installation and Usage
 To use the library, simply download the include folder, add its path to the compiler's search directories, and include the header file:
@@ -138,7 +147,7 @@ To use the library, simply download the include folder, add its path to the comp
 
 ## Requirements
 
-C++20 compiler
+C++23 compiler
 
 ---
 

@@ -5,6 +5,7 @@ basic_demos = [
   'HelloWorld',
   'Basic',
   'Constexpr',
+  'Descriptor',
 ]
 
 foreach demo : basic_demos

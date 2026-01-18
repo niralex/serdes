@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- C++20 compiler (g++, clang++)
+- C++23 compiler (g++, clang++)
 - Meson build system
 - Ninja build tool
 
@@ -47,6 +47,7 @@ meson compile -C builddir
 ./builddir/Demo/basic
 ./builddir/Demo/constexpr
 ./builddir/Demo/jsonarray
+./builddir/Demo/descriptor
 ```
 
 ## Clean build
