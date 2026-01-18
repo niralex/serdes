@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_CUSTOM_HPP
-#define SERDES_CORE_CUSTOM_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -41,7 +40,7 @@ namespace serdes
     /// @tparam ConvFromBase Callable entity (function pointer, functor, or lambda) that
     /// converts a value of type TBaseSerdes::ValueType to a value of type T
     template<typename T, CSerdes TBaseSerdes,
-             auto ConvToBase = [](const ValueT<TBaseSerdes> &baseValue){ return static_cast<ValueT<TBaseSerdes>>(baseValue); },
+             auto ConvToBase = [](const ValueT<TBaseSerdes> &baseValue){ return static_cast<ValueT<TBaseSerdes>>(baseValue); }, //[](const T &ob) { return static_cast<ValueT<TBaseSerdes>>(ob); },
              auto ConvFromBase = [](ValueT<TBaseSerdes> &&baseValue, T &ob){ ob = static_cast<T>(baseValue); }>
     struct Custom
     {
@@ -55,7 +54,11 @@ namespace serdes
         using BaseValueType = ValueT<BaseSerdes>;
 
         static consteval
-        TypeId GetTypeId() { return BaseSerdes::GetTypeId(); }
+        TypeId GetTypeId()
+        {
+            //return BaseSerdes::GetTypeId();
+            return TypeId::Custom;
+        }
 
         static consteval
         BufferType GetBufferType() { return BaseSerdes::GetBufferType(); }
@@ -78,33 +81,33 @@ namespace serdes
 
         template<COutputIterator TOutputIterator, typename TValue>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const TValue &ob)
+        TOutputIterator Serialize(TOutputIterator bufpos, const TValue &ob)
         {
-            return BaseSerdes::SerializeTo(bufpos, ConvToBase(ob));
+            return BaseSerdes::Serialize(bufpos, ConvToBase(ob));
         }
 
         template<COutputIterator TOutputIterator>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const BaseValueType &ob)
+        TOutputIterator Serialize(TOutputIterator bufpos, const BaseValueType &ob)
         {
-            return BaseSerdes::SerializeTo(bufpos, ob);
+            return BaseSerdes::Serialize(bufpos, ob);
         }
 
         template<CInputIterator TInputIterator, typename TValue>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, TValue &ob)
+        TInputIterator Deserialize(TInputIterator bufpos, TValue &ob)
         {
             BaseValueType baseVal;
-            bufpos = BaseSerdes::DeserializeFrom(bufpos, baseVal);
+            bufpos = BaseSerdes::Deserialize(bufpos, baseVal);
             ConvFromBase(std::move(baseVal), ob);
             return bufpos;
         }
 
         template<CInputIterator TInputIterator>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, BaseValueType &ob)
+        TInputIterator Deserialize(TInputIterator bufpos, BaseValueType &ob)
         {
-            return BaseSerdes::DeserializeFrom(bufpos, ob);
+            return BaseSerdes::Deserialize(bufpos, ob);
         }
 
     };
@@ -113,4 +116,3 @@ namespace serdes
 
 
 //------------------------------------------------------------------------------
-#endif

@@ -1,14 +1,19 @@
 //------------------------------------------------------------------------------
 /** @file
 
-    @brief Typed cross-platform serialization and deserialization.
+    @brief Demonstration of basic features
+
+    @details
+    Typed cross-platform serialization and deserialization.
+
+    @todo
+
 
     @author Niralex
 */
 //------------------------------------------------------------------------------
 
 #include <cassert>
-#include <iostream>
 #include <Serdes/Serdes.hpp>
 
 //------------------------------------------------------------------------------
@@ -25,10 +30,10 @@ int main()
     using CrossPlatformSerdes = Tuple<Int64, Float, Vector8<String>>;
 
     // Serialization
-    auto buffer = Serialize<CrossPlatformSerdes>(i, f, words);
+    auto buffer = SerializeToVector<CrossPlatformSerdes>(i, f, words);
 
     // Deserialization
-    auto [_i, _f, _words] = DeserializeFrom<CrossPlatformSerdes>(buffer.begin());
+    auto [_i, _f, _words] = Deserialize<CrossPlatformSerdes>(buffer.begin());
 
     // Check
     assert(_i == i);

@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_CONST_HPP
-#define SERDES_CORE_CONST_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -8,10 +7,8 @@
     @details
            This serdes performs no actual serialization/deserialization
            and serves as a placeholder in composite serdes to "pass through" constant values.
-
            ValueT<Const> is unique for each constant. To achieve this, each numeric constant is wrapped
 		   in a special helper template called Constant, or ConstexprString (for string literals).
-
     @todo
 
 
@@ -128,14 +125,14 @@ namespace serdes
 
         template<COutputIterator TOutputIterator, typename TValue>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const TValue &)
+        TOutputIterator Serialize(TOutputIterator bufpos, const TValue &)
         {
             return bufpos;
         }
 
         template<CInputIterator TInputIterator, typename TValue>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, TValue &value)
+        TInputIterator Deserialize(TInputIterator bufpos, TValue &value)
         {
             value = static_cast<TValue>(ValueType::Value);
             return bufpos;
@@ -145,4 +142,3 @@ namespace serdes
 } // serdes
 
 //------------------------------------------------------------------------------
-#endif

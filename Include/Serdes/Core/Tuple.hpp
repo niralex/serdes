@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_TUPLE_HPP
-#define SERDES_CORE_TUPLE_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -15,6 +14,7 @@
 */
 //------------------------------------------------------------------------------
 #include <tuple>
+#include <limits>
 #include "Math.hpp"
 #include "Typeids.hpp"
 #include "Concepts.hpp"
@@ -25,6 +25,7 @@ namespace serdes
 {
     /// @tparam TSerdes Pack of serdes for tuple elements
     template<CSerdes ...TSerdes>
+    requires (sizeof...(TSerdes) < std::numeric_limits<uint16_t>::max())
     struct Tuple
     {
         using ValueType = std::tuple<ValueT<TSerdes>...>;
@@ -51,7 +52,7 @@ namespace serdes
 
         /// Number of tuple elements
         [[nodiscard]] static consteval
-        size_t GetSize() { return sizeof...(TSerdes); }
+        uint16_t CountElements() { return sizeof...(TSerdes); }
 
         template<CTupleLike TValue>
         requires (sizeof...(TSerdes) == std::tuple_size_v<TValue>)
@@ -76,45 +77,46 @@ namespace serdes
             return valueSize;
         }
 
+
         template<COutputIterator TOutputIterator, CTupleLike TValue>
         requires (sizeof...(TSerdes) == std::tuple_size_v<TValue>)
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const TValue &value)
+        TOutputIterator Serialize(TOutputIterator bufpos, const TValue &value)
         {
             std::apply([&bufpos](const auto &...values)
             {
-                ((bufpos = TSerdes::SerializeTo(bufpos, values)), ...);
+                ((bufpos = TSerdes::Serialize(bufpos, values)), ...);
             }, value);
 
             return bufpos;
         }
 
         /// Serialization overload for initializer lists
-        /// For example: SerializeTo({1, 2, 3});
+        /// Например Serialize({1, 2, 3});
         template<COutputIterator TOutputIterator, typename TValue>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const std::initializer_list<TValue> &value)
+        TOutputIterator Serialize(TOutputIterator bufpos, const initializer_list<TValue> &value)
         {
-            return SerializeTo(bufpos, std::tuple(value.begin(), value.end()));
+            return Serialize(bufpos, std::tuple(value));
         }
 
         template<COutputIterator TOutputIterator, typename... TValues>
         requires (sizeof...(TSerdes) == sizeof...(TValues))
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const TValues &...values)
+        TOutputIterator Serialize(TOutputIterator bufpos, const TValues &...values)
         {
-            ((bufpos = TSerdes::SerializeTo(bufpos, values)), ...);
+            ((bufpos = TSerdes::Serialize(bufpos, values)), ...);
             return bufpos;
         }
 
         template<CInputIterator TInputIterator, CTupleLike TValue>
         requires (sizeof...(TSerdes) == std::tuple_size_v<TValue>)
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, TValue &tpl)
+        TInputIterator Deserialize(TInputIterator bufpos, TValue &tpl)
         {
             std::apply([&bufpos](auto &...values)
             {
-                ((bufpos = TSerdes::DeserializeFrom(bufpos, values)), ...);
+                ((bufpos = TSerdes::Deserialize(bufpos, values)), ...);
             }, tpl);
             return bufpos;
         }
@@ -122,14 +124,13 @@ namespace serdes
         template<CInputIterator TInputIterator, typename... TValues>
         requires (sizeof...(TSerdes) == sizeof...(TValues))
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, TValues &...values)
+        TInputIterator Deserialize(TInputIterator bufpos, TValues &...values)
         {
-            ((bufpos = TSerdes::DeserializeFrom(bufpos, values)), ...);
+            ((bufpos = TSerdes::Deserialize(bufpos, values)), ...);
             return bufpos;
         }
     };
 
-} // namespace serdes
+} // serdes
 
 //------------------------------------------------------------------------------
-#endif

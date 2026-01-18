@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_MATH_HPP
-#define SERDES_CORE_MATH_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /**	@file
 
@@ -14,6 +13,7 @@
 */
 //------------------------------------------------------------------------------
 #include <limits>
+#include "Exception.hpp"
 
 //------------------------------------------------------------------------------
 namespace utils
@@ -125,8 +125,7 @@ namespace utils
         /// or a value determined by the Policy is returned
         template<typename T>
         requires std::is_unsigned_v<T>
-        [[nodiscard]] static constexpr 
-		T Add(T l, T r)
+        [[nodiscard]] static constexpr T Add(T l, T r)
         {
             T res(l + r);
             if(res < l)
@@ -139,16 +138,14 @@ namespace utils
         /// or a value determined by the Policy is returned
         template<typename T>
         requires std::is_unsigned_v<T>
-        [[nodiscard]] static constexpr 
-		T Mul(T l, T r)
+        [[nodiscard]] static constexpr T Mul(T l, T r)
         {
-            if(r != 0 && std::numeric_limits<T>::max() / r < l)
+            if(r !=0 && std::numeric_limits<T>::max()/r < l)
                 return Policy::Handle(MathError::overflow, l, r, "Serdes/Core/Math.hpp/Mul(): overflow occurred");
             else
                 return l * r;
         }
     };
 
-} // namespace utils
+} // utils
 //------------------------------------------------------------------------------
-#endif

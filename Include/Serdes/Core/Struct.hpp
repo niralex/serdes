@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_STRUCT_HPP
-#define SERDES_CORE_STRUCT_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -38,13 +37,17 @@ namespace serdes
         using BaseSerdes = TSerdes;
 
         static consteval
-        TypeId GetTypeId() { return BaseSerdes::GetTypeId(); }
+        TypeId GetTypeId()
+        {
+            return TypeId::Custom;
+        }
 
         static consteval
         BufferType GetBufferType() { return BaseSerdes::GetBufferType(); }
 
         [[nodiscard]] static constexpr
         uint32_t Sizeof() { return BaseSerdes::Sizeof(); }
+
 
         [[nodiscard]] static constexpr
         uint32_t Sizeof(const ValueType &ob)
@@ -54,20 +57,21 @@ namespace serdes
 
         template<COutputIterator TOutputIterator>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const ValueType &ob)
+        TOutputIterator Serialize(TOutputIterator bufpos, const ValueType &ob)
         {
-            return BaseSerdes::SerializeTo(bufpos, (ob.*Fields)...);
+            return BaseSerdes::Serialize(bufpos, (ob.*Fields)...);
         }
 
         template<CInputIterator TInputIterator, typename TValue>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, TValue &ob)
+        TInputIterator Deserialize(TInputIterator bufpos, TValue &ob)
         {
-            return BaseSerdes::DeserializeFrom(bufpos, (ob.*Fields)...);
+            return BaseSerdes::Deserialize(bufpos, (ob.*Fields)...);
         }
     };
 
-} // namespace serdes
+} // serdes
+
 
 //------------------------------------------------------------------------------
-#endif
+

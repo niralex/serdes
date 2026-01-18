@@ -116,19 +116,19 @@ int main()
     auto json = Json::parse(jsonText);
 
     // Serialization
-    auto buffer = Serialize<TradeSerdes>(json);
+    auto buffer = SerializeToVector<TradeSerdes>(json);
     assert(buffer.size() == 130);
 
     // Deserialization into data for use in the program
     Trade trade;
-    DeserializeFrom<TradeSerdes>(buffer.begin(), trade);
+    Deserialize<TradeSerdes>(buffer.begin(), trade);
     auto [id, price, qty, quoteQty, time, isBuyerMaker, isBestMatch] = trade[1];
     assert(trade.size() == 3);
     assert(id == 28458);
     assert(isBestMatch == true);
 
     // Deserialization into JSON
-    auto _json = DeserializeFrom<TradeSerdes>(buffer.begin());
+    auto _json = Deserialize<TradeSerdes>(buffer.begin());
     assert(_json == json);
 
     return 0;

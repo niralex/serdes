@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_HELPERS_HPP
-#define SERDES_CORE_HELPERS_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /**	@file
 
@@ -13,6 +12,7 @@
 */
 //------------------------------------------------------------------------------
 #include <iterator>
+#include <limits>
 #include "Typeids.hpp"
 #include "Concepts.hpp"
 
@@ -25,6 +25,7 @@ namespace serdes
     using ValueT = typename TSerdes::ValueType;
 
     template<CSerdes ...TSerdes>
+    requires (sizeof...(TSerdes) < std::numeric_limits<uint16_t>::max())
     struct Tuple;
 
     namespace details
@@ -63,6 +64,5 @@ namespace serdes
 } // serdes
 
 //------------------------------------------------------------------------------
-#endif
 
 

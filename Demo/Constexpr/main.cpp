@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /** @file
 
-    @brief The simplest example of serialization-deserialization values of standard types
+    @brief The simplest example of constexpr serialization-deserialization values of standard types
 
     @details
 
@@ -27,13 +27,13 @@ int main()
     constexpr ValueT<MySerdes> data{112345678, 99999999, 123123123123}; //
 
     // constexpr serialization
-    constexpr auto buffer = Serialize<MySerdes>(data);
+    constexpr auto buffer = SerializeToArray<MySerdes>(data);
 
     static_assert(std::ranges::range<decltype(buffer)>);
     static_assert(buffer.size() == Sizeof<MySerdes>());
 
     // constexpr deserialization
-    constexpr auto _data = DeserializeFrom<MySerdes>(buffer.begin());
+    constexpr auto _data = Deserialize<MySerdes>(buffer.begin());
 
     // check
     static_assert(_data == data);

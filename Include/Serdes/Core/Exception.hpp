@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_EXCEPTIONS_HPP
-#define SERDES_CORE_EXCEPTIONS_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /**	@file
 
@@ -44,21 +43,21 @@ namespace utils
     /// @param message Exception description message
     /// @param location Standard object describing the source location
     template<typename TException>
-    [[noreturn]] constexpr
+    [[noreturn]]
+    constexpr
     void Throw(std::string_view message, const std::source_location& location = std::source_location::current())
     {
-        throw TException(std::format(
-            "{}:{} in {}: {}",
-            GetFileName(location.file_name()),
-            location.line(),
-            GetFunctionName(location.function_name()),
-            message));
+            throw TException(std::format(
+                "{}:{} in {}: {}",
+                GetFileName(location.file_name()),
+                location.line(),
+                GetFunctionName(location.function_name()),
+                message));
     }
 
 
 } // utils
 
 //------------------------------------------------------------------------------
-#endif
 
 

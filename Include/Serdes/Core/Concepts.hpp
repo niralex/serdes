@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_CONCEPTS_HPP
-#define SERDES_CORE_CONCEPTS_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /**	@file
 
@@ -34,8 +33,8 @@ namespace serdes
         { TSerdes::GetTypeId() } -> std::same_as<TypeId>;
 
         /// Requirement: functions to determine the serialized size of values must exist
-        { TSerdes::Sizeof() } -> std::same_as<uint32_t>;       // maximum possible size
-        { TSerdes::Sizeof(cvalue) } -> std::same_as<uint32_t>; // size for a specific value
+        { TSerdes::Sizeof() } -> std::same_as<uint32_t>;       // максимально возможное
+        { TSerdes::Sizeof(cvalue) } -> std::same_as<uint32_t>; // для конкретного значения
 
         /// Requirement: functions to determine the buffer type must exist.
         { TSerdes::GetBufferType() } -> std::same_as<BufferType>;
@@ -45,17 +44,51 @@ namespace serdes
         /// @param value Constant reference to the value to be serialized
         /// @return Iterator pointing to the buffer position immediately after the serialized value
         /// @note This function does not perform bounds checking.
-        { TSerdes::SerializeTo(bufpos, cvalue) } -> std::output_iterator<uint8_t>;
+        { TSerdes::Serialize(bufpos, cvalue) } -> std::output_iterator<uint8_t>;
 
         /// Requirement: a deserialization function from a given buffer must exist.
         /// @param cbufpos Iterator pointing to the serialized value in the buffer
         /// @param[out] value Reference to the variable where the deserialized value will be stored
         /// @return Iterator pointing to the buffer position immediately after the deserialized value
         /// @note This function does not perform bounds checking.
-        { TSerdes::DeserializeFrom(cbufpos, value) } -> std::input_iterator;
+        { TSerdes::Deserialize(cbufpos, value) } -> std::input_iterator;
 
     };
 
+    //--------------------------------------------------------------------------
+    /// Concept for Void-serdes
+    template<typename T>
+    concept CVoidSerdes = CSerdes<T> && (T::GetTypeId() == TypeId::Void);
+
+    /// Concept for POD-serdes
+    template<typename T>
+    concept CPodSerdes = CSerdes<T> && (T::GetTypeId() == TypeId::Pod);
+
+    /// Concept for Range-serdes
+    template<typename T>
+    concept CRangeSerdes = CSerdes<T> && (T::GetTypeId() == TypeId::Range);
+
+    /// Concept for Array-serdes
+    template<typename T>
+    concept CArraySerdes = CSerdes<T> && (T::GetTypeId() == TypeId::Array);
+
+    /// Concept for Tuple-serdes
+    template<typename T>
+    concept CTupleSerdes = CSerdes<T> && (T::GetTypeId() == TypeId::Tuple);
+
+    // Concept for Variant-serdes
+    template<typename T>
+    concept CVariantSerdes = CSerdes<T> && (T::GetTypeId() == TypeId::Variant);
+
+    /// Concept for Variant-serdes
+    template<typename T>
+    concept CConstSerdes = CSerdes<T> && (T::GetTypeId() == TypeId::Const);
+
+    /// Concept for Custom-serdes
+    template<typename T>
+    concept CCustomSerdes = CSerdes<T> && (T::GetTypeId() == TypeId::Custom);
+
+    //--------------------------------------------------------------------------
     /// Output iterator concept
     // Unlike the standard std::output_iterator, this concept takes only one parameter
     template<typename TIterator>
@@ -114,6 +147,5 @@ namespace serdes
 } // serdes
 
 //------------------------------------------------------------------------------
-#endif
 
 

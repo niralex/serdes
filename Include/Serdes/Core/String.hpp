@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_STRING_HPP
-#define SERDES_CORE_STRING_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -29,35 +28,36 @@ namespace serdes
     /// @tparam TCharSerdes Serdes used to serialize/deserialize individual characters
     /// @tparam TAllocator Callable entity for memory allocation
     template<
-        CSerdes TSizeSerdes,
+        CPodSerdes TSizeSerdes,
         CSerdes TCharSerdes,
         typename TAllocator = std::allocator<ValueT<TCharSerdes>>>
     struct BaseString : public Sequence<TSizeSerdes, TCharSerdes, std::basic_string<ValueT<TCharSerdes>, std::char_traits<ValueT<TCharSerdes>>, TAllocator>>
     {
         // Use SerializeTo from the base class
-        using Sequence<TSizeSerdes, TCharSerdes, std::basic_string<ValueT<TCharSerdes>, std::char_traits<ValueT<TCharSerdes>>, TAllocator>>::SerializeTo;
+        using Sequence<TSizeSerdes, TCharSerdes, std::basic_string<ValueT<TCharSerdes>, std::char_traits<ValueT<TCharSerdes>>, TAllocator>>::Serialize;
 
         // Overload for serializing string literals
         // Deserialization can be performed using any Range-based serdes into a compatible container
         template<COutputIterator TOutputIterator, typename TValue, size_t N>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const TValue (&cstr)[N])
+        TOutputIterator Serialize(TOutputIterator bufpos, const TValue (&cstr)[N])
         {
             // String length excluding the null terminator
-            constexpr size_t sz = N - 1;
+            constexpr size_t sz = N-1;
 
             // Serialize the length
-            bufpos = TSizeSerdes::SerializeTo(bufpos, sz);
+            bufpos = TSizeSerdes::Serialize(bufpos, sz);
 
             // Serialize the string characters
             for(size_t i = 0; i < sz; i++)
-                bufpos = TCharSerdes::SerializeTo(bufpos, cstr[i]);
+                bufpos = TCharSerdes::Serialize(bufpos, cstr[i]);
 
             return bufpos;
         }
+
     };
 
 } // namespace serdes
 
 //------------------------------------------------------------------------------
-#endif
+

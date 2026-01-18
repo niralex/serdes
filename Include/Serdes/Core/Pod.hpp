@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_POD_HPP
-#define SERDES_CORE_POD_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -26,7 +25,7 @@ namespace serdes
     /// Serdes template for POD types
     /// @tparam TValueType Base type for which the serdes is instantiated
     /// @tparam typeId POD type identifier (from Typeids.hpp)
-    template<CPod TValueType, PodTypeId typeId = PodTypeId::Unspecified>
+    template<CPod TValueType, PodId typeId = PodId::Unspecified, std::endian byteOrder = std::endian::little>
     struct Pod
     {
         using ValueType = TValueType;
@@ -35,18 +34,15 @@ namespace serdes
         TypeId GetTypeId() { return TypeId::Pod; }
 
         static consteval
-        PodTypeId GetPodId() { return typeId; }
+        PodId GetPodId() { return typeId; }
 
         static consteval
         BufferType GetBufferType() { return BufferType::Static; }
 
         static consteval
-        std::endian GetEndianness()
-        {
-            return static_cast<uint8_t>(GetPodId()) & 1 ? std::endian::big : std::endian::little;
-        }
+        std::endian GetEndianness() { return byteOrder; }
 
-        [[nodiscard]] static constexpr
+        [[nodiscard]] static consteval
         uint32_t Sizeof() { return sizeof(ValueType); }
 
         template<CExplicitlyConvertible<ValueType> TValue>
@@ -55,7 +51,7 @@ namespace serdes
 
         template<COutputIterator TOutputIterator, CExplicitlyConvertible<ValueType> TValue>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const TValue &value)
+        TOutputIterator Serialize(TOutputIterator bufpos, const TValue &value)
         {
             using IteratorValueType = typename std::iterator_traits<TOutputIterator>::value_type;
             using TBuffer = typename std::conditional<std::is_same_v<IteratorValueType, void>, std::uint8_t, IteratorValueType>::type;
@@ -66,7 +62,7 @@ namespace serdes
                 for(auto it = bytes.begin(); it != bytes.end(); it++)
                     *bufpos++ = static_cast<TBuffer>(*it);
 
-            else
+            else 
                 for(auto it = bytes.rbegin(); it != bytes.rend(); it++)
                     *bufpos++ = static_cast<TBuffer>(*it);
 
@@ -75,29 +71,29 @@ namespace serdes
 
         template<CInputIterator TInputIterator, CExplicitlyConvertible<ValueType> TValue>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, TValue &value)
+        TInputIterator Deserialize(TInputIterator bufpos, TValue &value)
         {
-            std::array<uint8_t, Sizeof()> bytes;
+            std::array<uint8_t, Sizeof()> bytes; 
 
             if constexpr (GetEndianness() == std::endian::native)
-                for(auto it = bytes.begin(); it != bytes.end(); it++)
+                for(auto it = bytes.begin(); it != bytes.end(); it++) 
                     *it = static_cast<uint8_t>(*bufpos++);
 
-            else
-                for(auto it = bytes.rbegin(); it != bytes.rend(); it++)
+            else 
+                for(auto it = bytes.rbegin(); it != bytes.rend(); it++) 
                     *it = static_cast<uint8_t>(*bufpos++);
 
-            value = static_cast<TValue>(std::bit_cast<ValueType>(bytes));
+            value = static_cast<TValue>(std::bit_cast<ValueType>(bytes)); 
 
             return bufpos;
         }
+
     };
 
     //--------------------------------------------------------------------------
     // Mixed-endian architectures are not supported
     static_assert(std::endian::native != std::endian::big || std::endian::native != std::endian::little);
 
-} // namespace serdes
+} // serdes
 
 //------------------------------------------------------------------------------
-#endif

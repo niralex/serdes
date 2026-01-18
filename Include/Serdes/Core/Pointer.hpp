@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_POINTER_HPP
-#define SERDES_CORE_POINTER_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -61,10 +60,10 @@ namespace serdes
 
         using SerdesType = TSerdes;
 
-        using SerdesList = std::tuple<Const<Pod<bool, PodTypeId::Bool>, false>, TSerdes>;
+        using SerdesList = std::tuple<Const<Pod<bool, PodId::Bool>, false>, TSerdes>;
 
         constexpr inline static
-        Allocator alloc{};
+        Allocator alloc{}; 
 
         static consteval
         TypeId GetTypeId() { return TypeId::Variant; }
@@ -84,40 +83,39 @@ namespace serdes
         {
             if(ptr)
                 return SerdesType::Sizeof(*ptr) + 1;
-            else
-                return Sizeof(nullptr);
+            else return Sizeof(nullptr);
         }
 
         template<COutputIterator TOutputIterator>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, std::nullptr_t)
+        TOutputIterator Serialize(TOutputIterator bufpos, std::nullptr_t)
         {
-            return Pod<uint8_t>::SerializeTo(bufpos, 0);
+            return Pod<uint8_t>::Serialize(bufpos, 0);
         }
 
         template<COutputIterator TOutputIterator, CPointerLike<ValueT<SerdesType>> TPtr>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const TPtr &pvalue)
+        TOutputIterator Serialize(TOutputIterator bufpos, const TPtr &pvalue)
         {
-            if (pvalue)
+            if (pvalue) 
             {
-                bufpos = Pod<uint8_t>::SerializeTo(bufpos, 1);
-                return SerdesType::SerializeTo(bufpos, *pvalue);
+                bufpos = Pod<uint8_t>::Serialize(bufpos, 1);
+                return SerdesType::Serialize(bufpos, *pvalue);
             }
             else
-                return SerializeTo(bufpos, nullptr);
+                return Serialize(bufpos, nullptr);
         }
 
         template<CInputIterator TInputIterator, CPointerLike<ValueT<SerdesType>> TPtr>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, TPtr &pvalue)
+        TInputIterator Deserialize(TInputIterator bufpos, TPtr &pvalue)
         {
             bool notNull;
-            bufpos = Pod<uint8_t>::DeserializeFrom(bufpos, notNull);
-            if(notNull)
+            bufpos = Pod<uint8_t>::Deserialize(bufpos, notNull);
+            if(notNull) 
             {
                 alloc(pvalue);
-                return SerdesType::DeserializeFrom(bufpos, *pvalue);
+                return SerdesType::Deserialize(bufpos, *pvalue);
             }
             else
             {
@@ -127,7 +125,6 @@ namespace serdes
         }
     };
 
-} // namespace serdes
+} // serdes
 
 //------------------------------------------------------------------------------
-#endif

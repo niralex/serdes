@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_SEQUENCE_HPP
-#define SERDES_CORE_SEQUENCE_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -34,28 +33,29 @@ namespace serdes
     struct Sequence : public Range<TSizeSerdes, TElementSerdes, TValueType>
     {
         // Use SerializeTo from the base class
-        using Range<TSizeSerdes, TElementSerdes, TValueType>::SerializeTo;
+        using Range<TSizeSerdes, TElementSerdes, TValueType>::Serialize;
 
         template<CInputIterator TInputIterator, std::ranges::forward_range TSequence>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, TSequence &sequence)
+        TInputIterator Deserialize(TInputIterator bufpos, TSequence &sequence)
         {
             // Deserialize the sequence size
             ValueT<TSizeSerdes> sequenceSize{0};
-            bufpos = TSizeSerdes::DeserializeFrom(bufpos, sequenceSize);
+            bufpos = TSizeSerdes::Deserialize(bufpos, sequenceSize);
 
             sequence.resize(sequenceSize);
 
             // Deserialize elements
             auto element = std::ranges::begin(sequence);
             for(size_t i = 0; i < sequenceSize; i++)
-                bufpos = TElementSerdes::DeserializeFrom(bufpos, *element++);
+                bufpos = TElementSerdes::Deserialize(bufpos, *element++);
 
             return bufpos;
         }
+
     };
 
 } // namespace serdes
 
 //------------------------------------------------------------------------------
-#endif
+

@@ -1,6 +1,4 @@
-#ifndef SERDES_CORE_API_HPP
-#define SERDES_CORE_API_HPP
-
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -13,7 +11,6 @@
     @author Niraleks
 
 */
-
 //------------------------------------------------------------------------------
 #include "Concepts.hpp"
 #include "Helpers.hpp"
@@ -63,90 +60,99 @@ namespace serdes
     template<CSerdes ...TSerdes, COutputIterator TOutputIterator, typename ...TValues>
     requires (sizeof...(TSerdes) > 0)
     constexpr inline
-    TOutputIterator SerializeTo(TOutputIterator bufpos, const TValues &...values) 
+    TOutputIterator Serialize(TOutputIterator bufpos, const TValues &...values)
     {
-        return SerdesT<TSerdes...>::SerializeTo(bufpos, values...);
+        return SerdesT<TSerdes...>::Serialize(bufpos, values...);
     }
 
-    // Serialization function that automatically deduces serdes from argument types using DefaultT
+    /// Serialization function that automatically deduces serdes from argument types using DefaultT
     template<COutputIterator TOutputIterator, typename ...TValues>
     constexpr inline
-    TOutputIterator SerializeTo(TOutputIterator bufpos, const TValues &...values) 
+    TOutputIterator Serialize(TOutputIterator bufpos, const TValues &...values) // (2)
     {
-        return DefaultT<TValues...>::SerializeTo(bufpos, values...);
+        //return SerdesT<DefaultT<TValues>...>::Serialize(bufpos, values...);
+        return DefaultT<TValues...>::Serialize(bufpos, values...);
     }
 
     /// Serialization for cases where arguments are initializer lists
     template<CSerdes ...TSerdes, COutputIterator TOutputIterator, typename... TValue>
     requires (sizeof...(TValue) > 0)
     constexpr inline
-    TOutputIterator SerializeTo(TOutputIterator bufpos, const std::initializer_list<TValue> &...values) // (1)
+    TOutputIterator Serialize(TOutputIterator bufpos, const std::initializer_list<TValue> &...values)
     {
-        return SerializeTo<TSerdes...>(bufpos, std::ranges::subrange(values.begin(), values.end())...);
+        return Serialize<TSerdes...>(bufpos, std::ranges::subrange(values.begin(), values.end())...);
     }
 
-    /// Serialization into an automatically created buffer
-    /// The buffer type is chosen automatically based on the serdes type
-    /// This function is intended for the simplest use cases. For more complex scenarios,
-    /// explicit buffer management mechanisms should be used.
+    /// Serialization into an automatically created std::array
     template<CSerdes ...TSerdes, typename ...TValues>
     requires (sizeof...(TSerdes) > 0)
     constexpr inline
-    auto Serialize(const TValues &...values)
+    auto SerializeToArray(const TValues &...values)
     {
-        if constexpr (GetBufferType<TSerdes...>() == BufferType::Static)
-        {
-            std::array<uint8_t, Sizeof<TSerdes...>()> buf;
-            SerializeTo<TSerdes...>(buf.begin(), values...);
-            return buf;
-        }
-        else
-        {
-            std::vector<uint8_t> buf(Sizeof<TSerdes...>(values...));
-            SerializeTo<TSerdes...>(buf.begin(), values...);
-            return buf;
-        }
+        std::array<uint8_t, Sizeof<TSerdes...>(values...)> buf;
+        Serialize<TSerdes...>(buf.begin(), values...);
+        return buf;
     }
 
-    /// Serialization into an automatically created buffer with serdes automatically deduced
+    /// Serialization into an automatically created std::array with serdes automatically deduced
     /// from argument types using DefaultT
     template<typename ...TValues>
     constexpr inline
-    auto Serialize(const TValues &...values)
+    auto SerializeToArray(const TValues &...values)
     {
-        return Serialize<DefaultT<TValues...>>(values...);
+        return SerializeToArray<DefaultT<TValues...>>(values...);
     }
 
+    /// Serialization into an automatically created std::vector
+    template<CSerdes ...TSerdes, typename ...TValues>
+    requires (sizeof...(TSerdes) > 0)
+    inline
+    auto SerializeToVector(const TValues &...values)
+    {
+        std::vector<uint8_t> buf(Sizeof<TSerdes...>(values...));
+        Serialize<TSerdes...>(buf.begin(), values...);
+        return buf;
+    }
+
+	/// Serialization into an automatically created std::vector with serdes automatically deduced
+    /// from argument types using DefaultT
+    template<typename ...TValues>
+    inline
+    auto SerializeToVector(const TValues &...values)
+    {
+        return SerializeToVector<DefaultT<TValues...>>(values...);
+    }
+
+    //--------------------------------------------------------------------------
     /// Deserialization from an external buffer
     template<CSerdes ...TSerdes, CInputIterator TInputIterator, typename... TValues>
     requires (sizeof...(TValues) > 0 && sizeof...(TSerdes) > 0)
     constexpr inline
-    TInputIterator DeserializeFrom(TInputIterator bufpos, TValues &...values)
+    TInputIterator Deserialize(TInputIterator bufpos, TValues &...values)
     {
-        return SerdesT<TSerdes...>::DeserializeFrom(bufpos, values...);
+        return SerdesT<TSerdes...>::Deserialize(bufpos, values...);
     }
 
     /// Deserialization from an external buffer with serdes automatically deduced
     /// from argument types using DefaultT
     template<CInputIterator TInputIterator, typename... TValues>
     constexpr inline
-    TInputIterator DeserializeFrom(TInputIterator bufpos, TValues &...values)
+    TInputIterator Deserialize(TInputIterator bufpos, TValues &...values)
     {
-        return DefaultT<TValues...>::DeserializeFrom(bufpos, values...);
+        return DefaultT<TValues...>::Deserialize(bufpos, values...);
     }
 
     /// Deserialization from an external buffer with automatic value construction
     template<CSerdes ...TSerdes, CInputIterator TInputIterator>
     constexpr inline
-    auto DeserializeFrom(TInputIterator bufpos)
+    auto Deserialize(TInputIterator bufpos)
     {
         ValueT<SerdesT<TSerdes...>> values;
-        SerdesT<TSerdes...>::DeserializeFrom(bufpos, values);
+        SerdesT<TSerdes...>::Deserialize(bufpos, values);
         return values;
     }
 
 }
 
-//------------------------------------------------------------------------------
-#endif
+
 

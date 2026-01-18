@@ -1,7 +1,15 @@
 //------------------------------------------------------------------------------
 /** @file
 
-    @brief Simplest usage with automatic selection of serializer types.
+    @brief The simplest example of serialization-deserialization values of standard types.
+    A use case in which a buffer of the required size is automatically created.
+
+    Simplest usage with automatic selection of serializer types.
+
+    @details
+
+    @todo
+
 
     @author Niralex
 */
@@ -25,12 +33,12 @@ int main()
     char buffer[Sizeof(str, num)]; // 12 + 8 = 20 bytes (for a 64-bit unsigned)
 
     // Serialization
-    SerializeTo(buffer, str, num);
+    Serialize(buffer, str, num);
 
     // Deserialization
     std::string _str("Hello World!");
     unsigned _num;
-    DeserializeFrom(buffer, _str, _num);
+    Deserialize(buffer, _str, _num);
 
     // Check
     assert(_str == str);

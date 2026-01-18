@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_ASSOC_HPP
-#define SERDES_CORE_ASSOC_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -33,11 +32,11 @@ namespace serdes
     {
         template<CInputIterator TInputIterator, std::ranges::forward_range TAssocContainer>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, TAssocContainer &container)
+        TInputIterator Deserialize(TInputIterator bufpos, TAssocContainer &container)
         {
             // Deserialize container size
             ValueT<TSizeSerdes> containerSize{0};
-            bufpos = TSizeSerdes::DeserializeFrom(bufpos, containerSize);
+            bufpos = TSizeSerdes::Deserialize(bufpos, containerSize);
 
             container.clear();
 
@@ -45,7 +44,7 @@ namespace serdes
             for(ValueT<TSizeSerdes> i = 0; i < containerSize; i++)
             {
                 ValueT<TElementSerdes> element{};
-                bufpos = TElementSerdes::DeserializeFrom(bufpos, element);
+                bufpos = TElementSerdes::Deserialize(bufpos, element);
                 container.insert(std::move(static_cast<std::ranges::range_value_t<TAssocContainer>>(element)));
             }
 
@@ -56,5 +55,4 @@ namespace serdes
 } // namespace serdes
 
 //------------------------------------------------------------------------------
-#endif
 

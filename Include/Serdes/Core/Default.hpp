@@ -1,6 +1,4 @@
-#ifndef SERDES_CORE_DEFAULT_HPP
-#define SERDES_CORE_DEFAULT_HPP
-
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -20,7 +18,6 @@
     @author Niraleks
 
 */
-
 //------------------------------------------------------------------------------
 #include <limits>
 #include <type_traits>
@@ -133,13 +130,13 @@ namespace serdes
     template<>
     struct Default<std::chrono::nanoseconds> { using Type = NativeEndianSerdes<DateTime, DateTimeB>; };
 
-
+    //-------------------------------------------------------------------------
     /// Enumerations
     template<typename TEnum>
     requires std::is_enum_v<TEnum>
     struct Default<TEnum> { using Type = DefaultT<std::underlying_type_t<TEnum>>; };
 
-
+    //-------------------------------------------------------------------------
     /// Strings
     template<>
     struct Default<std::string> { using Type = String; };
@@ -152,7 +149,7 @@ namespace serdes
 
     template<>
     struct Default<std::u32string> { using Type = U32String; };
-	
+
     // String literals are handled using String
     template<std::size_t N>
     struct Default<char[N]> { using Type = String; };
@@ -249,4 +246,3 @@ namespace serdes
 }
 
 //------------------------------------------------------------------------------
-#endif

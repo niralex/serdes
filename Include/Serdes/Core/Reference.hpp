@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_REFERENCE_HPP
-#define SERDES_CORE_REFERENCE_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -24,6 +23,7 @@
         4) A value serialized with Reference occupies one byte less in the buffer than with Pointer.
 
     @todo
+
 
     @author Niraleks
 */
@@ -67,8 +67,7 @@ namespace serdes
         {
             if(refer)
                 return SerdesType::Sizeof(*refer);
-            else
-                utils::Throw<std::invalid_argument>("Pointer must not be null");
+            else utils::Throw<std::invalid_argument>("Pointer must not be null");
         }
 
         // Handles Reference<>::Sizeof(nullptr);
@@ -77,25 +76,23 @@ namespace serdes
 
         template<COutputIterator TOutputIterator, CPointerLike<ValueT<SerdesType>> TPtr>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const TPtr &refer)
+        TOutputIterator Serialize(TOutputIterator bufpos, const TPtr &refer)
         {
             if(refer)
-                return SerdesType::SerializeTo(bufpos, *refer);
-            else
-                throw std::invalid_argument("Serdes/Core/Reference.hpp/SerializeTo(..., const TPtr &refer): refer must not be null");
+                return SerdesType::Serialize(bufpos, *refer);
+            else utils::Throw<std::invalid_argument>("Refer must not be null");
         }
 
         template<CInputIterator TInputIterator, CPointerLike<ValueT<SerdesType>> TPtr>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, TPtr &refer)
+        TInputIterator Deserialize(TInputIterator bufpos, TPtr &refer)
         {
             if(!refer)
                 alloc(refer);
-            return SerdesType::DeserializeFrom(bufpos, *refer);
+            return SerdesType::Deserialize(bufpos, *refer);
         }
     };
 
-} // namespace serdes
+} // serdes
 
 //------------------------------------------------------------------------------
-#endif

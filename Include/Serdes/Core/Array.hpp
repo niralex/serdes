@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_ARRAY_HPP
-#define SERDES_CORE_ARRAY_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -100,61 +99,60 @@ namespace serdes
         /// @note The container/range size may exceed arraySize, but only the first arraySize elements will be serialized.
         template<COutputIterator TOutputIterator, std::ranges::range TRange>
         static constexpr
-        auto SerializeTo(TOutputIterator bufpos, const TRange &range)
+        auto Serialize(TOutputIterator bufpos, const TRange &range)
         {
             auto element = std::ranges::begin(range);
             uint32_t i;
             for(i = 0; i < arraySize && element != std::ranges::end(range); i++)
-                bufpos = ElementSerdes::SerializeTo(bufpos, *element++);
-            if(i == arraySize)
+                bufpos = ElementSerdes::Serialize(bufpos, *element++);
+            if(i == arraySize) 
                 return bufpos;
-            else
-                utils::Throw<std::length_error>(std::format("input range shorter than expected array size (expected {}, got {})", arraySize, i));
+            else 
+                utils::Throw<std::length_error>(std::format("input range shorter than expected array size (expected {}, got {})",
+                    arraySize, i));
         }
 
         /// Serialization of elements provided as a parameter pack
-		template<COutputIterator TOutputIterator, typename ...TValues>
+        template<COutputIterator TOutputIterator, typename ...TValues>
         requires (sizeof...(TValues) == arraySize)
         static constexpr
-        auto SerializeTo(TOutputIterator bufpos, const TValues &...values)
+        auto Serialize(TOutputIterator bufpos, const TValues &...values)
         {
-            ((bufpos = ElementSerdes::SerializeTo(bufpos, values)), ...);
+            ((bufpos = ElementSerdes::Serialize(bufpos, values)), ...);
             return bufpos;
         }
 
         /// Serialization of elements provided as an initializer list
-		template<COutputIterator TOutputIterator, typename TValue>
+        template<COutputIterator TOutputIterator, typename TValue>
         static constexpr
-        auto SerializeTo(TOutputIterator bufpos, const std::initializer_list<TValue> &value)
+        auto Serialize(TOutputIterator bufpos, const std::initializer_list<TValue> &value)
         {
-            return SerializeTo(bufpos, std::ranges::subrange(value.begin(), value.end()));
+            return Serialize(bufpos, std::ranges::subrange(value.begin(), value.end()));
         }
 
         /// Deserialization into a given range
-		template<CInputIterator TInputIterator, std::ranges::forward_range TRange>
+        template<CInputIterator TInputIterator, std::ranges::forward_range TRange>
         static constexpr
-        auto DeserializeFrom(TInputIterator bufpos, TRange &range)
+        auto Deserialize(TInputIterator bufpos, TRange &range)
         {
             auto elementIt = std::ranges::begin(range);
 
             for(uint32_t i = 0; i < arraySize; i++)
-                bufpos = ElementSerdes::DeserializeFrom(bufpos, *elementIt++);
+                bufpos = ElementSerdes::Deserialize(bufpos, *elementIt++);
 
             return bufpos;
         }
 
         /// Deserialization of elements provided as a parameter pack
-		template<CInputIterator TInputIterator, typename ...TValues>
+        template<CInputIterator TInputIterator, typename ...TValues>
         requires (sizeof...(TValues) == arraySize)
         static constexpr
-        auto DeserializeFrom(TInputIterator bufpos, TValues &...values)
+        auto Deserialize(TInputIterator bufpos, TValues &...values)
         {
-            ((bufpos = ElementSerdes::DeserializeFrom(bufpos, values)), ...);
+            ((bufpos = ElementSerdes::Deserialize(bufpos, values)), ...);
             return bufpos;
         }
     };
 
 } // serdes
 
-//------------------------------------------------------------------------------
-#endif

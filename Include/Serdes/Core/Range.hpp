@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_RANGE_HPP
-#define SERDES_CORE_RANGE_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -29,7 +28,7 @@ namespace serdes
     /// @tparam TElementSerdes Serdes used to serialize/deserialize individual elements
     /// @tparam TValueType Range type
     template<
-        CSerdes TSizeSerdes,
+        CPodSerdes TSizeSerdes,
         CSerdes TElementSerdes,
         std::ranges::range TValueType>
     requires (TSizeSerdes::Sizeof() == 1 || TSizeSerdes::Sizeof() == 2 || TSizeSerdes::Sizeof() == 4)
@@ -50,7 +49,8 @@ namespace serdes
         using ValueType = TValueType;
 
         /// Length of the size field (in bytes)
-        static constexpr uint8_t sizelen = sizeof(ValueT<TSizeSerdes>);
+        static constexpr
+        uint8_t sizelen = sizeof(ValueT<TSizeSerdes>);
 
         static consteval
         TypeId GetTypeId() { return TypeId::Range; }
@@ -65,7 +65,7 @@ namespace serdes
                     static_cast<uint32_t>(sizelen),
                     utils::Safe<utils::policy::MaxValue>::Mul(
                         ElementSerdes::Sizeof(),
-                        static_cast<uint32_t>(std::numeric_limits<ValueT<TSizeSerdes>>::max())));
+                        static_cast<uint32_t>(std::numeric_limits<ValueT<TSizeSerdes>>::max()))); // вместимость контейнера
         }
 
         /// @note This function may return WRONG_SIZE if an overflow occurs during computation
@@ -95,14 +95,14 @@ namespace serdes
 
         template<COutputIterator TOutputIterator, std::ranges::forward_range TRange>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const TRange &range)
+        TOutputIterator Serialize(TOutputIterator bufpos, const TRange &range)
         {
             // Serialize the range size
-            bufpos = SizeSerdes::SerializeTo(bufpos, std::ranges::size(range));
+            bufpos = SizeSerdes::Serialize(bufpos, std::ranges::size(range));
 
             // Serialize range elements
             for(const auto &element: range)
-                bufpos = ElementSerdes::SerializeTo(bufpos, element);
+                bufpos = ElementSerdes::Serialize(bufpos, element);
 
             return bufpos;
         }
@@ -111,4 +111,4 @@ namespace serdes
 } // namespace serdes
 
 //------------------------------------------------------------------------------
-#endif
+

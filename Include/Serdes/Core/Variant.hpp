@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_VARIANT_HPP
-#define SERDES_CORE_VARIANT_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -34,6 +33,9 @@ namespace serdes
         using ValueType = std::variant<ValueT<TSerdes>...>;
 
         using SerdesList = std::tuple<TSerdes...>;
+
+        [[nodiscard]] static consteval
+        uint16_t CountTypes() { return sizeof...(TSerdes); }
 
         /// Determines the index of the serdes in TSerdes that matches type TValue
         /// for serialization/deserialization
@@ -88,21 +90,21 @@ namespace serdes
         template<COutputIterator TOutputIterator, typename TValue>
         requires std::disjunction_v<is_same<TValue, ValueT<TSerdes>>...>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const TValue &value)
+        TOutputIterator Serialize(TOutputIterator bufpos, const TValue &value)
         {
             // Serialize the type index
-            bufpos = Pod<uint8_t>::SerializeTo(bufpos, GetIndex<TValue>());
+            bufpos = Pod<uint8_t>::Serialize(bufpos, GetIndex<TValue>());
 
             // Serialize the value
-            return MatchSerdes<TValue>::SerializeTo(bufpos, value);
+            return MatchSerdes<TValue>::Serialize(bufpos, value);
         }
 
         /// Serializes a std::variant value
         template<COutputIterator TOutputIterator>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const ValueType &value)
+        TOutputIterator Serialize(TOutputIterator bufpos, const ValueType &value)
         {
-            return std::visit([bufpos](const auto &v) { return SerializeTo(bufpos, v); }, value);
+            return std::visit([bufpos](const auto &v) { return Serialize(bufpos, v); }, value);
         }
 
         /// Deserializes a std::variant value
@@ -112,17 +114,17 @@ namespace serdes
         // and the function returns the original `bufpos` iterator.
         template<CInputIterator TInputIterator>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, ValueType &value)
+        TInputIterator Deserialize(TInputIterator bufpos, ValueType &value)
         {
             // Deserialize the serdes index
             uint8_t index;
-            bufpos = Pod<uint8_t>::DeserializeFrom(bufpos, index);
+            bufpos = Pod<uint8_t>::Deserialize(bufpos, index);
 
             // Sequentially compare the deserialized index with the indices of serdes in the pack.
             // When a match is found, deserialize into the std::variant at the corresponding type index.
-            return [index, &value]<size_t ...I>(TInputIterator bufpos, std::index_sequence<I...>) constexpr
+            return [index, &value]<size_t ...I>(TInputIterator bufpos, std::index_sequence<I...>)constexpr
             {
-                ((void)((index == I ? (bufpos = std::tuple_element_t<I, SerdesList>::DeserializeFrom(bufpos, value.template emplace<I>()), false) : true) && ...));
+                ((void)((index == I ? (bufpos = std::tuple_element_t<I, SerdesList>::Deserialize(bufpos, value.template emplace<I>()), false) : true) && ...));
                 return bufpos;
             }(bufpos, std::make_index_sequence<sizeof...(TSerdes)>{});
         }
@@ -134,13 +136,13 @@ namespace serdes
         template<CInputIterator TInputIterator, typename TValue>
         requires std::disjunction_v<is_same<TValue, ValueT<TSerdes>>...>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, TValue &value)
+        TInputIterator Deserialize(TInputIterator bufpos, TValue &value)
         {
-            return MatchSerdes<TValue>::DeserializeFrom(bufpos + 1, value);
+            return MatchSerdes<TValue>::Deserialize(bufpos + 1, value);
         }
+
     };
 
-} // namespace serdes
+} // serdes
 
 //------------------------------------------------------------------------------
-#endif

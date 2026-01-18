@@ -1,5 +1,4 @@
-#ifndef SERDES_CORE_VOID_HPP
-#define SERDES_CORE_VOID_HPP
+#pragma once
 //------------------------------------------------------------------------------
 /** @file
 
@@ -12,7 +11,6 @@
 
     @author Niraleks
 */
-
 //------------------------------------------------------------------------------
 #include <variant>
 #include "Concepts.hpp"
@@ -40,29 +38,28 @@ namespace serdes
 
         template<COutputIterator TOutputIterator>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos, const ValueType &)
+        TOutputIterator Serialize(TOutputIterator bufpos, const ValueType &)
         {
             return bufpos;
         }
 
         template<COutputIterator TOutputIterator>
         static constexpr
-        TOutputIterator SerializeTo(TOutputIterator bufpos) { return bufpos; }
+        TOutputIterator Serialize(TOutputIterator bufpos) { return bufpos; }
 
         template<CInputIterator TInputIterator>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos, ValueType &value)
+        TInputIterator Deserialize(TInputIterator bufpos, ValueType &value)
         {
             return bufpos;
         }
 
         template<CInputIterator TInputIterator>
         static constexpr
-        TInputIterator DeserializeFrom(TInputIterator bufpos) { return bufpos; }
+        TInputIterator Deserialize(TInputIterator bufpos) { return bufpos; }
 
     };
 
 } // serdes
 
 //------------------------------------------------------------------------------
-#endif
