@@ -142,7 +142,10 @@ To use the library, simply download the include folder, add its path to the comp
 ```cpp
 #include <Serdes/Serdes.hpp>
 ```
-
+If descriptors are required, include the header file:
+```cpp
+#include <Serdes/Descriptors.hpp>
+```
 ---
 
 ## Requirements
